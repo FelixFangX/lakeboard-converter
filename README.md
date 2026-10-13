@@ -1,4 +1,4 @@
-# mindmap-converter
+# lakeboard-converter
 
 English | [简体中文](./README.zh-CN.md)
 
@@ -22,7 +22,7 @@ CLI & Web tool to convert Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mi
 ## Install
 
 ```bash
-git clone https://github.com/ColeFang/lakeboard-converter.git
+git clone https://github.com/FelixFangX/lakeboard-converter.git
 cd lakeboard-converter
 npm install
 ```

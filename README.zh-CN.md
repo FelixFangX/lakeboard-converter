@@ -1,4 +1,4 @@
-# mindmap-converter
+# lakeboard-converter
 
 [English](./README.md) | 简体中文
 
@@ -22,7 +22,7 @@
 ## 安装
 
 ```bash
-git clone https://github.com/ColeFang/lakeboard-converter.git
+git clone https://github.com/FelixFangX/lakeboard-converter.git
 cd lakeboard-converter
 npm install
 ```
