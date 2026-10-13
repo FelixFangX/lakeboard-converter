@@ -1,140 +1,50 @@
-# lakeboard-converter
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/header-dark.svg">
+  <img alt="lakeboard-converter — Mind maps to Markdown your agents can read." src="./docs/assets/header-light.svg" width="100%">
+</picture>
 
-English | [简体中文](./README.zh-CN.md)
+**Convert Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mind maps into Markdown or a fresh `.xmind`.** Comes as a CLI, a guided TUI and a drag-and-drop web UI. English | [简体中文](./README.zh-CN.md)
 
-CLI & Web tool to convert Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mind maps into Markdown.
-
-## Features
-
-- Parse `.lakeboard` files (Yuque)
-- Parse `.xmind` files (XMind Zen/2020+)
-- Preserve topic hierarchy, ordering, notes, labels, and links
-- Export generic Markdown
-- Export XMind-friendly Markdown
-- Generate `.xmind` files directly
-- **Interactive TUI** — guided step-by-step file selection and conversion
-- **Web UI** with drag-and-drop file upload, Markdown preview, and tree view
-
-## Requirements
-
-- Node.js 18+
-
-## Install
+## Quickstart
 
 ```bash
 git clone https://github.com/FelixFangX/lakeboard-converter.git
-cd lakeboard-converter
-npm install
+cd lakeboard-converter && npm ci
+npm run convert -- ./test-fixtures/test.lakeboard --format md --out-dir ./out
 ```
 
-## Quick usage
+Requires Node 18+.
 
-### Interactive TUI mode (recommended)
+## Usage
+
+| Mode | Command |
+|---|---|
+| Guided TUI | `npm run dev` |
+| CLI | `npm run convert -- <file> --format md\|xmind\|both [--markdown-style generic\|xmind] [--out-dir DIR] [--output FILE] [--overwrite]` |
+| Web UI | `npm run dev:web` (production build: `npm run build:web`) |
+| Library (from source) | `import { convertBuffer, convertFile } from './src/index.js'` |
+
+Existing output files are never overwritten unless you pass `--overwrite`.
+
+## How it works
+
+```text
+.lakeboard ─┐                          ┌─ renderGenericMarkdown → # root + nested list
+            ├─ parse → MindMapDocument ─┼─ renderXmindMarkdown  → single-root list for XMind import
+.xmind ─────┘     (TopicNode tree)      └─ renderXmind          → minimal .xmind package
+```
+
+The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam.
+
+Keeps text, hierarchy, order, notes, labels and links. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
+
+## Testing
 
 ```bash
-npm run dev
+npm test            # vitest specs at the convert seam, using test-fixtures/
+npm run typecheck
 ```
 
-Launches an interactive terminal interface that guides you through:
-1. Selecting an input file (auto-discovery, file browser, or manual path entry)
-2. Choosing the output format (Markdown / XMind / both)
-3. Selecting the Markdown style (generic or XMind-friendly)
-4. Setting the output directory
-5. Conversion and result display
+## License
 
-### Non-interactive CLI mode
-
-For scripting and CI pipelines, use the `convert` subcommand directly:
-
-```bash
-# From a .lakeboard file
-npm run convert -- "/path/to/example.lakeboard" --format md --markdown-style generic
-
-# From a .xmind file
-npm run convert -- "/path/to/example.xmind" --format md --markdown-style generic
-
-# Export both Markdown and XMind
-npm run convert -- "/path/to/example.lakeboard" --format both --out-dir ./dist
-
-# Overwrite existing files
-npm run convert -- "/path/to/example.xmind" --format both --overwrite
-```
-
-### Web mode
-
-```bash
-# Development server
-npm run dev:web
-
-# Build for production
-npm run build:web
-```
-
-The Web UI provides:
-- Drag-and-drop file upload for `.lakeboard` and `.xmind` files
-- Real-time conversion to Markdown
-- Toggle between Generic and XMind Markdown styles
-- Markdown source view and tree structure preview
-- Copy to clipboard and download `.md` file
-
-## CLI options (non-interactive mode)
-
-| Option | Description |
-| --- | --- |
-| `--format` | Output format: `md`, `xmind`, or `both` |
-| `--markdown-style` | Markdown style: `generic` or `xmind` |
-| `--output` | Output file path for a single export target |
-| `--out-dir` | Output directory |
-| `--overwrite` | Allow overwriting existing files |
-
-## Supported input formats
-
-| Format | Extension | Notes |
-| --- | --- | --- |
-| Yuque Lakeboard | `.lakeboard` | JSON-based mind map format |
-| XMind | `.xmind` | ZIP archive with `content.json` (XMind Zen/2020+ only) |
-
-## Output formats
-
-### Generic Markdown
-- Root node becomes an H1 heading
-- Child nodes become nested lists
-- Notes rendered as blockquotes, links as Markdown links
-- Good for Git, docs, and general Markdown tools
-
-### XMind-friendly Markdown
-- Single-root nested list output
-- Each topic is rendered on one line
-- Multi-line text is flattened for easier XMind import
-
-### XMind
-- Generates a minimal `.xmind` package directly
-- Includes `content.json`, `metadata.json`, and `manifest.json`
-- Focuses on preserving text, hierarchy, and order
-
-## Scripts
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Launch interactive TUI |
-| `npm run dev:web` | Start Web UI development server |
-| `npm run build` | Build CLI for production |
-| `npm run build:web` | Build Web UI for production |
-| `npm run typecheck` | TypeScript type checking |
-| `npm run test` | Run tests |
-| `npm run convert` | Non-interactive CLI convert command |
-
-## Development
-
-```bash
-npm run build        # Build CLI
-npm run build:web    # Build Web UI
-npm run typecheck    # Type checking
-npm run test         # Run tests
-```
-
-## Limitations
-
-- Preserves text, hierarchy, and order, but not styling, color, or layout
-- XMind 8 (legacy XML format) is not supported — only XMind Zen/2020+ (JSON-based)
-- New `.lakeboard` variants may require parser updates
+[MIT](./LICENSE)
