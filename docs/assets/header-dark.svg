@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="200" viewBox="0 0 1200 200" role="img" aria-labelledby="t d" font-family="ui-sans-serif,-apple-system,'Segoe UI',Inter,Helvetica,Arial,sans-serif">
+<title id="t">lakeboard-converter</title>
+<desc id="d">Mind maps to Markdown your agents can read. Flow: lakeboard/xmind → parse → Markdown.</desc>
+<style>.flow{stroke-dasharray:5 6;animation:f 1.4s linear infinite}@keyframes f{to{stroke-dashoffset:-11}}@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+<rect class="bg" width="1200" height="200" fill="#0b0f17"/>
+<rect width="1200" height="26" fill="#000000"/><rect y="174" width="1200" height="26" fill="#000000"/>
+<text x="40" y="17" fill="#6e7681" font-size="11" letter-spacing="3" font-family="ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,monospace">AGENT CONTROL ROOM · AGENT LAYER · <tspan fill="#60a5fa">LAKEBOARD-CONVERTER</tspan></text>
+<text x="1160" y="17" text-anchor="end" fill="#6e7681" font-size="11" letter-spacing="3" font-family="ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,monospace">FELIXFANGX</text>
+<text x="40" y="96" fill="#e6edf3" font-size="38" font-weight="800" letter-spacing="-0.5">lakeboard-converter</text>
+<text x="40" y="132" fill="#8b949e" font-size="17">Mind maps to Markdown your agents can read.</text>
+<g data-step="lakeboard/xmind"><rect x="642" y="78" width="150" height="44" rx="10" fill="#111827" stroke="#273142"/>
+<text x="717" y="105" text-anchor="middle" fill="#e6edf3" font-size="13" font-family="ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,monospace">lakeboard/xmind</text></g><line class="flow" x1="796" y1="100" x2="822" y2="100" stroke="#60a5fa" stroke-width="2"/>
+<g data-step="parse"><rect x="826" y="78" width="150" height="44" rx="10" fill="#111827" stroke="#60a5fa"/>
+<text x="901" y="105" text-anchor="middle" fill="#60a5fa" font-size="13" font-family="ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,monospace">parse</text></g><line class="flow" x1="980" y1="100" x2="1006" y2="100" stroke="#60a5fa" stroke-width="2"/>
+<g data-step="Markdown"><rect x="1010" y="78" width="150" height="44" rx="10" fill="#111827" stroke="#273142"/>
+<text x="1085" y="105" text-anchor="middle" fill="#e6edf3" font-size="13" font-family="ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,monospace">Markdown</text></g>
+</svg>
