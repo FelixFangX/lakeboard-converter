@@ -5,7 +5,7 @@ import { convertFile } from './index.js';
 const program = new Command();
 
 program
-  .name('mindmap-converter')
+  .name('lakeboard-converter')
   .description('将 .lakeboard / .xmind 思维导图文件转换为 Markdown 或 XMind 格式')
   .version('0.2.0');
 
