@@ -346,7 +346,7 @@ export function App() {
 
       <footer className="footer">
         MindMap Converter · 支持 .lakeboard 和 .xmind 格式 ·{' '}
-        <a href="https://github.com/ColeFang/lakeboard-converter" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/FelixFangX/lakeboard-converter" target="_blank" rel="noopener noreferrer">GitHub</a>
       </footer>
     </div>
   );
