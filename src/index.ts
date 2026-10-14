@@ -11,6 +11,8 @@ export { parseLakeboardFile } from './core/parse-lakeboard.js';
 export { parseXmindFile, parseXmindBuffer } from './core/parse-xmind.js';
 export { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 export { renderXmind } from './render/xmind.js';
+export { readMindMap, AGENT_FORMATS } from './agent.js';
+export type { AgentFormat, AgentReadResult, AgentTopic } from './agent.js';
 
 export interface ConvertResult {
   outputs: string[];
