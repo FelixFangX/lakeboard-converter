@@ -6,4 +6,4 @@
 - The MCP tool is read-only. Don't add tools that write files without a spec issue.
 - Keep `server.json` and `package.json` versions in sync.
 - Fixtures: `test-fixtures/` only. Never commit real user mind maps.
-- Publishing (maintainer only, needs npm and GitHub sign-in): add `mcpName` to package.json, `npm publish`, then `mcp-publisher init && mcp-publisher login github && mcp-publisher publish` with `packageArguments: [{"type":"positional","value":"mcp"}]`.
+- Publishing (maintainer; needs npm + GitHub sign-in): `npm run build && npm publish`, then `mcp-publisher login github && mcp-publisher publish` (uses `server.json`; `mcpName` in package.json must equal `server.json` name `io.github.FelixFangX/lakeboard-converter`). Bump all three versions together.
