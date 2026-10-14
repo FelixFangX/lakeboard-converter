@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.FelixFangX/lakeboard-converter",
+  "description": "Read Yuque Lakeboard and XMind mind maps as Markdown, a JSON topic tree or an outline.",
+  "repository": {
+    "url": "https://github.com/FelixFangX/lakeboard-converter",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "lakeboard-converter",
+      "version": "0.3.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "registryBaseUrl": "https://registry.npmjs.org"
+    }
+  ],
+  "title": "Lakeboard Converter",
+  "websiteUrl": "https://github.com/FelixFangX/lakeboard-converter"
+}
