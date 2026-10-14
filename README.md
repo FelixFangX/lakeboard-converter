@@ -26,6 +26,20 @@ Requires Node 18+.
 
 Existing output files are never overwritten unless you pass `--overwrite`.
 
+## For agents (MCP and `--json`)
+
+Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text).
+
+```bash
+npm run build
+# MCP client config (Claude Desktop, Cursor, ...):
+#   { "command": "node", "args": ["/abs/path/lakeboard-converter/dist/cli.js", "mcp"] }
+node dist/cli.js read ./test-fixtures/test.lakeboard --format json --json   # same result on stdout
+node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
+```
+
+Every JSON result has `schemaVersion: 1`, `source`, `format`, `nodeCount`, `maxDepth` and `content`. Errors with `--json` print `{"error": "..."}` and exit 1. See [AGENTS.md](./AGENTS.md) for contributors.
+
 ## How it works
 
 ```text
@@ -34,14 +48,14 @@ Existing output files are never overwritten unless you pass `--overwrite`.
 .xmind ─────┘     (TopicNode tree)      └─ renderXmind          → minimal .xmind package
 ```
 
-The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam.
+The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam; agents use `readMindMap` in `src/agent.ts`, which never writes files.
 
 Keeps text, hierarchy, order, notes, labels and links. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
 
 ## Testing
 
 ```bash
-npm test            # vitest specs at the convert seam, using test-fixtures/
+npm test            # vitest specs at the convert, readMindMap and MCP seams, using test-fixtures/
 npm run typecheck
 ```
 

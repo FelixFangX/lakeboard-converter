@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { convertFile } from './index.js';
+import { readMindMap, type AgentFormat } from './agent.js';
 
 const program = new Command();
 
 program
   .name('lakeboard-converter')
   .description('将 .lakeboard / .xmind 思维导图文件转换为 Markdown 或 XMind 格式')
-  .version('0.2.0');
+  .version('0.3.0');
 
 program
   .command('convert')
@@ -18,6 +19,7 @@ program
   .option('-o, --output <path>', '单一导出格式时指定输出文件')
   .option('--out-dir <dir>', '输出目录')
   .option('--overwrite', '允许覆盖已有文件', false)
+  .option('--json', 'print a machine-readable JSON result', false)
   .action(async (input, options) => {
     try {
       if (!['md', 'xmind', 'both'].includes(options.format)) {
@@ -36,18 +38,50 @@ program
         overwrite: options.overwrite,
       });
 
+      if (options.json) {
+        console.log(JSON.stringify({ schemaVersion: 1, ...result }));
+        return;
+      }
       console.log(`转换完成：节点 ${result.nodeCount} 个，最大深度 ${result.maxDepth}`);
       for (const output of result.outputs) {
         console.log(`已生成: ${output}`);
       }
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(options.json ? JSON.stringify({ error: message }) : message);
       process.exitCode = 1;
     }
   });
 
+program
+  .command('read')
+  .description('Print a mind map to stdout for agents and scripts (never writes files)')
+  .argument('<input>', '.lakeboard or .xmind file')
+  .option('-f, --format <format>', 'md | json | outline', 'md')
+  .option('--json', 'wrap the result in a stable JSON envelope', false)
+  .action(async (input, options) => {
+    try {
+      const result = await readMindMap(input, options.format as AgentFormat);
+      if (options.json) console.log(JSON.stringify(result));
+      else process.stdout.write(typeof result.content === 'string' ? result.content : `${JSON.stringify(result.content, null, 2)}\n`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(options.json ? JSON.stringify({ error: message }) : message);
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command('mcp')
+  .description('Start the read-only MCP server on stdio')
+  .action(async () => {
+    const { createServer } = await import('./mcp.js');
+    const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
+    await createServer().connect(new StdioServerTransport());
+  });
+
 const args = process.argv.slice(2);
-const hasSubcommand = args.length > 0 && (args[0] === 'convert' || args[0] === 'help' || args[0] === '--help' || args[0] === '-h' || args[0] === '--version' || args[0] === '-V');
+const hasSubcommand = args.length > 0 && (args[0] === 'convert' || args[0] === 'read' || args[0] === 'mcp' || args[0] === 'help' || args[0] === '--help' || args[0] === '-h' || args[0] === '--version' || args[0] === '-V');
 
 if (hasSubcommand) {
   program.parseAsync(process.argv);

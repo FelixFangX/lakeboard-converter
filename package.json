@@ -1,11 +1,12 @@
 {
   "name": "lakeboard-converter",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "CLI & Web tool to convert Yuque Lakeboard (.lakeboard) and XMind (.xmind) files into Markdown",
   "type": "module",
   "bin": {
     "lakeboard-converter": "./dist/cli.js",
-    "mindmap-converter": "./dist/cli.js"
+    "mindmap-converter": "./dist/cli.js",
+    "lakeboard-converter-mcp": "./dist/mcp.js"
   },
   "main": "./dist/index.js",
   "scripts": {
@@ -24,7 +25,11 @@
     "xmind",
     "converter",
     "mindmap",
-    "typescript"
+    "typescript",
+    "mcp",
+    "mcp-server",
+    "yuque",
+    "agent"
   ],
   "license": "MIT",
   "engines": {
@@ -32,11 +37,13 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.4.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "chalk": "^5.6.2",
     "commander": "^14.0.1",
     "jszip": "^3.10.1",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.12.2",
@@ -51,5 +58,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FelixFangX/lakeboard-converter.git"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
 }

@@ -1,0 +1,9 @@
+# AGENTS.md
+
+- Build/test: `npm ci && npm run typecheck && npm test` (CI runs the same on Node 22).
+- Seams: `convertFile`/`convertBuffer` (src/index.ts) for humans, `readMindMap` (src/agent.ts) for agents. Test only through these, the MCP server (`createServer` in src/mcp.ts) or the CLI.
+- Parsers live in `src/core/`, renderers in `src/render/`. A new input format = one parser, no renderer changes.
+- The MCP tool is read-only. Don't add tools that write files without a spec issue.
+- Keep `server.json` and `package.json` versions in sync.
+- Fixtures: `test-fixtures/` only. Never commit real user mind maps.
+- Publishing (maintainer only, needs npm and GitHub sign-in): add `mcpName` to package.json, `npm publish`, then `mcp-publisher init && mcp-publisher login github && mcp-publisher publish` with `packageArguments: [{"type":"positional","value":"mcp"}]`.
