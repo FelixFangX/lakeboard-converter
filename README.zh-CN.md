@@ -35,12 +35,12 @@ npm install
 npm run dev
 ```
 
-启动交互式终端界面，引导你完成：
-1. 选择输入文件（自动发现、目录浏览或手动输入路径）
-2. 选择导出格式（Markdown / XMind / 全部）
-3. 选择 Markdown 风格（通用 或 XMind 导入风格）
-4. 设置输出目录
-5. 执行转换并展示结果
+启动交互式终端界面。界面文字为英文，引导你完成：
+1. 选择输入文件（`How do you want to choose the input file?`）：从当前目录自动发现的文件中选（`Pick from files found in the current directory`）、手动输入路径（`Enter a file path`）或浏览目录（`Browse directories`）
+2. 选择导出格式（`Export format:`）：Markdown / XMind / 全部（`(both)`）
+3. 选择 Markdown 风格（`Markdown style:`）：`Generic Markdown` 或 `XMind import style`
+4. 设置输出位置（`Output location:`）：`Same directory as the input file` 或 `Custom output directory`
+5. 确认是否覆盖已有文件（`Overwrite output files if they already exist?`），执行转换并展示结果（`✔ Conversion complete`，以及 `Nodes:` / `Max depth:` / `Time:`）
 
 ### 非交互式 CLI 模式
 
@@ -60,6 +60,22 @@ npm run convert -- "/path/to/example.lakeboard" --format both --out-dir ./dist
 npm run convert -- "/path/to/example.xmind" --format both --overwrite
 ```
 
+CLI 输出为英文，例如转换成功时：
+
+```text
+Done: 42 nodes, max depth 4
+Wrote: /path/to/example.md
+```
+
+常见报错（英文原文）：
+
+| 报错 | 含义 |
+| --- | --- |
+| `Unsupported input format: .txt (only .lakeboard and .xmind are supported)` | 输入扩展名不受支持 |
+| `Output file already exists: …` | 输出文件已存在，需加 `--overwrite` |
+| `--output only works with a single export format; use --out-dir instead` | `--output` 只能配合单一导出格式 |
+| `.xmind file is missing content.json; it is probably an old XMind 8 file (only XMind Zen/2020+ is supported)` | 旧版 XMind 8 文件，不受支持 |
+
 ### Web 模式
 
 ```bash
@@ -70,22 +86,22 @@ npm run dev:web
 npm run build:web
 ```
 
-Web 界面提供：
-- 拖拽上传 `.lakeboard` 和 `.xmind` 文件
-- 实时转换为 Markdown
-- 切换通用 / XMind 两种 Markdown 风格
-- Markdown 源码视图和树形结构预览
-- 一键复制和下载 `.md` 文件
+Web 界面文字为英文（标题 `Mind map → Markdown`），提供：
+- 拖拽上传 `.lakeboard` 和 `.xmind` 文件（`Drop a file here, or click to choose one`）
+- 实时转换为 Markdown（转换中显示 `Converting…`）
+- 切换 `Generic Markdown` / `XMind import style` 两种 Markdown 风格
+- Markdown 源码视图和树形结构预览（`Tree preview`），并显示 `Nodes` / `Depth` 统计
+- 一键复制（`Copy` → `Copied`）和下载 `.md` 文件（`Download .md`）
 
 ## CLI 参数（非交互式模式）
 
-| 参数               | 说明                                |
-| ------------------ | ----------------------------------- |
-| `--format`         | 导出格式：`md`、`xmind`、`both`     |
-| `--markdown-style` | Markdown 风格：`generic` 或 `xmind` |
-| `--output`         | 单一导出目标的输出文件路径          |
-| `--out-dir`        | 输出目录                            |
-| `--overwrite`      | 允许覆盖已有文件                    |
+| 参数 | 说明 | `--help` 中的英文说明 |
+| --- | --- | --- |
+| `--format` | 导出格式：`md`、`xmind`、`both` | `Export format: md \| xmind \| both` |
+| `--markdown-style` | Markdown 风格：`generic` 或 `xmind` | `Markdown style: generic \| xmind` |
+| `--output` | 单一导出目标的输出文件路径 | `Output file path (single export format only)` |
+| `--out-dir` | 输出目录 | `Output directory` |
+| `--overwrite` | 允许覆盖已有文件 | `Allow overwriting existing files` |
 
 ## 支持的输入格式
 
