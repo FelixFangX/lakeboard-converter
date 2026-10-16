@@ -33,14 +33,14 @@ function detectSourceFormat(filePath: string): SourceFormat {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.lakeboard') return 'lakeboard';
   if (ext === '.xmind') return 'xmind';
-  throw new Error(`不支持的输入文件格式：${ext}（仅支持 .lakeboard 和 .xmind）`);
+  throw new Error(`Unsupported input format: ${ext} (only .lakeboard and .xmind are supported)`);
 }
 
 async function ensureWritable(filePath: string, overwrite = false): Promise<void> {
   try {
     await stat(filePath);
     if (!overwrite) {
-      throw new Error(`输出文件已存在：${filePath}`);
+      throw new Error(`Output file already exists: ${filePath}`);
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
@@ -57,7 +57,7 @@ function resolveOutputPaths(options: ConvertInputOptions): { mdPath?: string; xm
   if (options.output) {
     const outputPath = path.resolve(options.output);
     if (options.format === 'both') {
-      throw new Error('--output 仅支持单一导出格式，请改用 --out-dir');
+      throw new Error('--output only works with a single export format; use --out-dir instead');
     }
     return options.format === 'md' ? { mdPath: outputPath } : { xmindPath: outputPath };
   }

@@ -184,9 +184,9 @@ export function App() {
       <main className="main">
         {!file && (
           <section className="hero">
-            <h1 className="hero-title">思维导图 → Markdown</h1>
+            <h1 className="hero-title">Mind map → Markdown</h1>
             <p className="hero-subtitle">
-              将语雀 .lakeboard 或 XMind .xmind 思维导图文件转换为结构化 Markdown，支持节点、备注、标签和链接
+              Convert Yuque .lakeboard or XMind .xmind mind maps into structured Markdown, keeping nodes, notes, labels and links
             </p>
           </section>
         )}
@@ -201,10 +201,10 @@ export function App() {
           >
             <UploadIcon />
             <div className="upload-zone-title">
-              拖放文件到此处，或点击选择
+              Drop a file here, or click to choose one
             </div>
             <div className="upload-zone-desc">
-              支持 .lakeboard（语雀画板）和 .xmind（XMind Zen/2020+）格式
+              Supports .lakeboard (Yuque board) and .xmind (XMind Zen/2020+)
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <span className="badge badge-blue">.lakeboard</span>
@@ -232,7 +232,7 @@ export function App() {
                   {formatBytes(file.size)} · {document?.format === 'xmind' ? 'XMind' : 'Lakeboard'}
                 </div>
               </div>
-              <button className="file-remove" onClick={handleReset} title="移除文件">
+              <button className="file-remove" onClick={handleReset} title="Remove file">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M4 4l8 8M12 4l-8 8" />
                 </svg>
@@ -247,8 +247,8 @@ export function App() {
                   value={markdownStyle}
                   onChange={(e) => handleStyleChange(e.target.value as MarkdownStyle)}
                 >
-                  <option value="generic">通用 Markdown</option>
-                  <option value="xmind">XMind 导入风格</option>
+                  <option value="generic">Generic Markdown</option>
+                  <option value="xmind">XMind import style</option>
                 </select>
               </div>
             </div>
@@ -265,7 +265,7 @@ export function App() {
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '24px 0', justifyContent: 'center' }}>
                 <div className="spinner" />
-                <span style={{ color: 'var(--gray-500)', fontSize: 14 }}>转换中…</span>
+                <span style={{ color: 'var(--gray-500)', fontSize: 14 }}>Converting…</span>
               </div>
             )}
 
@@ -274,20 +274,20 @@ export function App() {
                 <div className="result-header">
                   <div className="result-info">
                     <span className="result-stat">
-                      节点 <strong>{document.nodeCount}</strong>
+                      Nodes <strong>{document.nodeCount}</strong>
                     </span>
                     <span className="result-stat">
-                      深度 <strong>{document.maxDepth}</strong>
+                      Depth <strong>{document.maxDepth}</strong>
                     </span>
                   </div>
                   <div className="result-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={handleCopy} aria-label="复制 Markdown 到剪贴板">
+                    <button className="btn btn-secondary btn-sm" onClick={handleCopy} aria-label="Copy Markdown to clipboard">
                       {copied ? (
                         <>
                           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--success-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 8.5l3 3 7-7" />
                           </svg>
-                          已复制
+                          Copied
                         </>
                       ) : (
                         <>
@@ -295,7 +295,7 @@ export function App() {
                             <rect x="5" y="5" width="9" height="9" rx="1.5" />
                             <path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" />
                           </svg>
-                          复制
+                          Copy
                         </>
                       )}
                     </button>
@@ -303,7 +303,7 @@ export function App() {
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M8 2v9M4 8l4 4 4-4M2 13h12" />
                       </svg>
-                      下载 .md
+                      Download .md
                     </button>
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export function App() {
                         className={`preview-tab ${viewMode === 'tree' ? 'active' : ''}`}
                         onClick={() => setViewMode('tree')}
                       >
-                        树形预览
+                        Tree preview
                       </button>
                     </div>
                     <span style={{ fontSize: 12, color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>
@@ -345,7 +345,7 @@ export function App() {
       </main>
 
       <footer className="footer">
-        MindMap Converter · 支持 .lakeboard 和 .xmind 格式 ·{' '}
+        MindMap Converter · supports .lakeboard and .xmind ·{' '}
         <a href="https://github.com/FelixFangX/lakeboard-converter" target="_blank" rel="noopener noreferrer">GitHub</a>
       </footer>
     </div>

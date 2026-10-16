@@ -12,7 +12,7 @@ export function validateTree(root: TopicNode): ValidationResult {
 
   const visit = (node: TopicNode, depth: number): void => {
     if (ids.has(node.id)) {
-      throw new Error(`发现重复节点 id: ${node.id}`);
+      throw new Error(`Duplicate node id: ${node.id}`);
     }
 
     ids.add(node.id);
@@ -21,7 +21,7 @@ export function validateTree(root: TopicNode): ValidationResult {
 
     node.children.forEach((child, index) => {
       if (child.order !== index) {
-        throw new Error(`节点 ${child.id} 的顺序字段异常，期望 ${index}，实际 ${child.order}`);
+        throw new Error(`Node ${child.id} has an invalid order: expected ${index}, got ${child.order}`);
       }
       visit(child, depth + 1);
     });
