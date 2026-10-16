@@ -49,12 +49,12 @@ export async function parseXmindBuffer(
   try {
     zip = await JSZip.loadAsync(buffer);
   } catch {
-    throw new Error('无法解压 .xmind 文件：文件可能已损坏或不是有效的 ZIP 归档');
+    throw new Error('Cannot unzip .xmind file: it may be corrupt or not a valid ZIP archive');
   }
 
   const contentFile = zip.file('content.json');
   if (!contentFile) {
-    throw new Error('.xmind 文件缺少 content.json，可能是旧版 XMind 8 格式（仅支持 XMind Zen/2020+ 格式）');
+    throw new Error('.xmind file is missing content.json; it is probably an old XMind 8 file (only XMind Zen/2020+ is supported)');
   }
 
   let sheets: XMindSheet[];
@@ -62,16 +62,16 @@ export async function parseXmindBuffer(
     const contentStr = await contentFile.async('string');
     sheets = JSON.parse(contentStr) as XMindSheet[];
   } catch {
-    throw new Error('无法解析 .xmind 文件中的 content.json');
+    throw new Error('Failed to parse content.json in the .xmind file');
   }
 
   if (!Array.isArray(sheets) || sheets.length === 0) {
-    throw new Error('.xmind 文件中未找到任何画布（sheet）');
+    throw new Error('No sheets found in the .xmind file');
   }
 
   const sheet = sheets[0];
   if (!sheet.rootTopic) {
-    throw new Error('.xmind 文件中首个画布缺少 rootTopic');
+    throw new Error('The first sheet in the .xmind file has no rootTopic');
   }
 
   const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));

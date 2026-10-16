@@ -72,6 +72,6 @@ describe('convertFile', () => {
     expect(back.nodeCount).toBe(nodeCount);
   });
   it('rejects unsupported extensions', async () => {
-    await expect(convertFile({ input: 'x.txt', format: 'md', markdownStyle: 'generic' })).rejects.toThrow(/\.txt/);
+    await expect(convertFile({ input: 'x.txt', format: 'md', markdownStyle: 'generic' })).rejects.toThrow(/Unsupported input format: \.txt/);
   });
 });

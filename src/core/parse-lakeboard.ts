@@ -30,17 +30,17 @@ function convertNode(node: RawNode, order: number): TopicNode {
 
 function parseLakeboardData(data: RawLakeboardFile, sourcePath?: string): MindMapDocument {
   if (data.format !== 'lakeboard') {
-    throw new Error('输入文件不是受支持的 lakeboard JSON 格式');
+    throw new Error('Input is not a supported lakeboard JSON file');
   }
 
   const body = data.diagramData?.body;
   if (!Array.isArray(body) || body.length === 0) {
-    throw new Error('lakeboard 文件缺少 diagramData.body');
+    throw new Error('lakeboard file is missing diagramData.body');
   }
 
   const rootRaw = body.find((node) => node.type === 'mindmap') ?? body[0];
   if (!rootRaw) {
-    throw new Error('未找到可转换的 mindmap 根节点');
+    throw new Error('No convertible mindmap root node found');
   }
 
   const root = normalizeTree(convertNode(rootRaw, 0));
@@ -66,7 +66,7 @@ export function parseLakeboardContent(content: string, sourcePath?: string): Min
   try {
     data = JSON.parse(content) as RawLakeboardFile;
   } catch (error) {
-    throw new Error(`无法解析 .lakeboard 文件：${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Failed to parse .lakeboard file: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   return parseLakeboardData(data, sourcePath);

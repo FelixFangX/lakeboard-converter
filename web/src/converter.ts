@@ -120,21 +120,21 @@ function parseLakeboardContent(content: string): MindMapDocument {
   try {
     data = JSON.parse(content) as RawLakeboardFile;
   } catch {
-    throw new Error('无法解析 .lakeboard 文件：JSON 格式错误');
+    throw new Error('Failed to parse .lakeboard file: invalid JSON');
   }
 
   if (data.format !== 'lakeboard') {
-    throw new Error('输入文件不是受支持的 lakeboard JSON 格式');
+    throw new Error('Input is not a supported lakeboard JSON file');
   }
 
   const body = data.diagramData?.body;
   if (!Array.isArray(body) || body.length === 0) {
-    throw new Error('lakeboard 文件缺少 diagramData.body');
+    throw new Error('lakeboard file is missing diagramData.body');
   }
 
   const rootRaw = body.find((node) => node.type === 'mindmap') ?? body[0];
   if (!rootRaw) {
-    throw new Error('未找到可转换的 mindmap 根节点');
+    throw new Error('No convertible mindmap root node found');
   }
 
   const root = normalizeTree(convertLakeboardNode(rootRaw, 0));
@@ -183,14 +183,14 @@ async function parseXmindBuffer(buffer: ArrayBuffer): Promise<MindMapDocument> {
     zip = await JSZip.loadAsync(buffer);
   } catch {
     throw new Error(
-      '无法解压 .xmind 文件：文件可能已损坏或不是有效的 ZIP 归档',
+      'Cannot unzip .xmind file: it may be corrupt or not a valid ZIP archive',
     );
   }
 
   const contentFile = zip.file('content.json');
   if (!contentFile) {
     throw new Error(
-      '.xmind 文件缺少 content.json，可能是旧版 XMind 8 格式（仅支持 XMind Zen/2020+ 格式）',
+      '.xmind file is missing content.json; it is probably an old XMind 8 file (only XMind Zen/2020+ is supported)',
     );
   }
 
@@ -199,16 +199,16 @@ async function parseXmindBuffer(buffer: ArrayBuffer): Promise<MindMapDocument> {
     const contentStr = await contentFile.async('string');
     sheets = JSON.parse(contentStr) as XMindSheet[];
   } catch {
-    throw new Error('无法解析 .xmind 文件中的 content.json');
+    throw new Error('Failed to parse content.json in the .xmind file');
   }
 
   if (!Array.isArray(sheets) || sheets.length === 0) {
-    throw new Error('.xmind 文件中未找到任何画布（sheet）');
+    throw new Error('No sheets found in the .xmind file');
   }
 
   const sheet = sheets[0];
   if (!sheet.rootTopic) {
-    throw new Error('.xmind 文件中首个画布缺少 rootTopic');
+    throw new Error('The first sheet in the .xmind file has no rootTopic');
   }
 
   const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
@@ -293,7 +293,7 @@ export async function convertFile(
     const text = await file.text();
     document = parseLakeboardContent(text);
   } else {
-    throw new Error(`不支持的文件格式：.${ext}（仅支持 .lakeboard 和 .xmind）`);
+    throw new Error(`Unsupported file format: .${ext} (only .lakeboard and .xmind are supported)`);
   }
 
   const markdown = renderMarkdown(document, style);

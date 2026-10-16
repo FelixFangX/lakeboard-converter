@@ -96,20 +96,20 @@ async function selectInputFile(): Promise<string> {
 
   if (quickScan.length > 0) {
     const mode = await select({
-      message: '如何选择输入文件？',
+      message: 'How do you want to choose the input file?',
       choices: [
         {
-          name: `从当前目录自动发现的文件中选择 ${dim(`(找到 ${quickScan.length} 个)`)}`,
+          name: `Pick from files found in the current directory ${dim(`(${quickScan.length} found)`)}`,
           value: 'auto' as const,
         },
-        { name: '手动输入文件路径', value: 'manual' as const },
-        { name: '浏览目录选择文件', value: 'browse' as const },
+        { name: 'Enter a file path', value: 'manual' as const },
+        { name: 'Browse directories', value: 'browse' as const },
       ],
     });
 
     if (mode === 'auto') {
       const filePath = await search({
-        message: '选择要转换的文件：',
+        message: 'Choose a file to convert:',
         source: async (term) => {
           const filtered = term
             ? quickScan.filter((f) => f.fullPath.toLowerCase().includes(term.toLowerCase()))
@@ -136,10 +136,10 @@ async function selectInputFile(): Promise<string> {
   }
 
   const mode = await select({
-    message: '当前目录未发现 .lakeboard / .xmind 文件',
+    message: 'No .lakeboard / .xmind files found in the current directory',
     choices: [
-      { name: '手动输入文件路径', value: 'manual' as const },
-      { name: '浏览目录选择文件', value: 'browse' as const },
+      { name: 'Enter a file path', value: 'manual' as const },
+      { name: 'Browse directories', value: 'browse' as const },
     ],
   });
 
@@ -152,19 +152,19 @@ async function selectInputFile(): Promise<string> {
 
 async function inputFilePath(): Promise<string> {
   const filePath = await input({
-    message: '请输入文件路径：',
+    message: 'File path:',
     validate: async (value) => {
-      if (!value.trim()) return '请输入文件路径';
+      if (!value.trim()) return 'Please enter a file path';
       const resolved = path.resolve(value.trim());
       const ext = path.extname(resolved).toLowerCase();
       if (!SUPPORTED_EXTENSIONS.includes(ext)) {
-        return `不支持的文件格式：${ext}（仅支持 ${SUPPORTED_EXTENSIONS.join(', ')}）`;
+        return `Unsupported file format: ${ext} (supported: ${SUPPORTED_EXTENSIONS.join(', ')})`;
       }
       try {
         const s = await stat(resolved);
-        if (!s.isFile()) return '路径不是文件';
+        if (!s.isFile()) return 'Path is not a file';
       } catch {
-        return '文件不存在';
+        return 'File does not exist';
       }
       return true;
     },
@@ -188,11 +188,11 @@ async function browseForFile(startDir: string): Promise<string> {
     const choices: (BrowseChoice | Separator)[] = [];
 
     if (currentDir !== path.parse(currentDir).root) {
-      choices.push({ name: `${dim('..')} ${dim('(上级目录)')}`, value: '__PARENT__' });
+      choices.push({ name: `${dim('..')} ${dim('(parent directory)')}`, value: '__PARENT__' });
     }
 
     if (supportedFiles.length > 0) {
-      choices.push(new Separator(dim('── 可转换文件 ──')));
+      choices.push(new Separator(dim('── Convertible files ──')));
       for (const f of supportedFiles) {
         const badge = f.ext === '.xmind' ? magenta('[XMind]') : cyan('[LB]');
         choices.push({ name: `${badge} ${f.name}`, value: f.fullPath });
@@ -200,20 +200,20 @@ async function browseForFile(startDir: string): Promise<string> {
     }
 
     if (dirs.length > 0) {
-      choices.push(new Separator(dim('── 目录 ──')));
+      choices.push(new Separator(dim('── Directories ──')));
       for (const d of dirs) {
         choices.push({ name: `📁 ${d.name}/`, value: `__DIR__:${d.fullPath}` });
       }
     }
 
     if (choices.length === 0) {
-      console.log(yellow('  当前目录为空'));
+      console.log(yellow('  This directory is empty'));
       currentDir = path.dirname(currentDir);
       continue;
     }
 
     const selected = await select({
-      message: `浏览: ${dim(currentDir)}`,
+      message: `Browse: ${dim(currentDir)}`,
       choices,
       pageSize: 20,
     });
@@ -236,22 +236,22 @@ async function browseForFile(startDir: string): Promise<string> {
 
 async function selectFormat(): Promise<'md' | 'xmind' | 'both'> {
   return select({
-    message: '选择导出格式：',
+    message: 'Export format:',
     choices: [
       {
         name: `${green('Markdown')} ${dim('.md')}`,
         value: 'md' as const,
-        description: '导出为 Markdown 文件',
+        description: 'Export as a Markdown file',
       },
       {
         name: `${magenta('XMind')} ${dim('.xmind')}`,
         value: 'xmind' as const,
-        description: '导出为 XMind 文件',
+        description: 'Export as an XMind file',
       },
       {
-        name: `${green('Markdown')} + ${magenta('XMind')} ${dim('(全部导出)')}`,
+        name: `${green('Markdown')} + ${magenta('XMind')} ${dim('(both)')}`,
         value: 'both' as const,
-        description: '同时导出 Markdown 和 XMind',
+        description: 'Export both Markdown and XMind',
       },
     ],
     default: 'md',
@@ -262,17 +262,17 @@ async function selectFormat(): Promise<'md' | 'xmind' | 'both'> {
 
 async function selectMarkdownStyle(): Promise<MarkdownStyle> {
   return select({
-    message: 'Markdown 风格：',
+    message: 'Markdown style:',
     choices: [
       {
-        name: `通用 Markdown ${dim('(H1 标题 + 嵌套列表)')}`,
+        name: `Generic Markdown ${dim('(H1 title + nested list)')}`,
         value: 'generic' as const,
-        description: '根节点为 H1，子节点为嵌套列表，包含备注和链接',
+        description: 'Root node as H1, children as a nested list, with notes and links',
       },
       {
-        name: `XMind 导入风格 ${dim('(纯嵌套列表，单行节点)')}`,
+        name: `XMind import style ${dim('(plain nested list, one line per node)')}`,
         value: 'xmind' as const,
-        description: '适合导入 XMind 的单层嵌套列表格式',
+        description: 'Nested list format suited for importing into XMind',
       },
     ],
     default: 'generic',
@@ -285,14 +285,14 @@ async function selectOutputDir(inputPath: string): Promise<string | undefined> {
   const inputDir = path.dirname(inputPath);
 
   const choice = await select({
-    message: '输出位置：',
+    message: 'Output location:',
     choices: [
       {
-        name: `与输入文件同目录 ${dim(`(${inputDir})`)}`,
+        name: `Same directory as the input file ${dim(`(${inputDir})`)}`,
         value: 'same' as const,
       },
       {
-        name: '自定义输出目录',
+        name: 'Custom output directory',
         value: 'custom' as const,
       },
     ],
@@ -302,10 +302,10 @@ async function selectOutputDir(inputPath: string): Promise<string | undefined> {
   if (choice === 'same') return undefined;
 
   const outDir = await input({
-    message: '输出目录路径：',
+    message: 'Output directory path:',
     default: './output',
     validate: (value) => {
-      if (!value.trim()) return '请输入目录路径';
+      if (!value.trim()) return 'Please enter a directory path';
       return true;
     },
   });
@@ -317,7 +317,7 @@ async function selectOutputDir(inputPath: string): Promise<string | undefined> {
 
 async function askOverwrite(): Promise<boolean> {
   return confirm({
-    message: '如果输出文件已存在，是否覆盖？',
+    message: 'Overwrite output files if they already exist?',
     default: true,
   });
 }
@@ -331,11 +331,11 @@ function printResult(
   elapsed: number,
 ): void {
   console.log();
-  console.log(green(bold('  ✔ 转换完成')));
+  console.log(green(bold('  ✔ Conversion complete')));
   console.log();
-  console.log(`  ${dim('节点数:')}  ${bold(String(nodeCount))}`);
-  console.log(`  ${dim('最大深度:')} ${bold(String(maxDepth))}`);
-  console.log(`  ${dim('耗时:')}    ${bold(`${elapsed}ms`)}`);
+  console.log(`  ${dim('Nodes:')}     ${bold(String(nodeCount))}`);
+  console.log(`  ${dim('Max depth:')} ${bold(String(maxDepth))}`);
+  console.log(`  ${dim('Time:')}      ${bold(`${elapsed}ms`)}`);
   console.log();
 
   for (const output of outputs) {
@@ -357,7 +357,7 @@ export async function runInteractiveTUI(): Promise<void> {
   while (continueLoop) {
     try {
       const inputFile = await selectInputFile();
-      console.log(dim(`  → 已选择: ${path.relative(process.cwd(), inputFile)}`));
+      console.log(dim(`  → Selected: ${path.relative(process.cwd(), inputFile)}`));
       console.log();
 
       const format = await selectFormat();
@@ -371,7 +371,7 @@ export async function runInteractiveTUI(): Promise<void> {
       const overwrite = await askOverwrite();
 
       console.log();
-      console.log(dim('  正在转换...'));
+      console.log(dim('  Converting...'));
 
       const start = Date.now();
       const result = await convertFile({
@@ -386,7 +386,7 @@ export async function runInteractiveTUI(): Promise<void> {
       printResult(result.outputs, result.nodeCount, result.maxDepth, elapsed);
 
       continueLoop = await confirm({
-        message: '是否继续转换其他文件？',
+        message: 'Convert another file?',
         default: false,
       });
 
@@ -400,22 +400,22 @@ export async function runInteractiveTUI(): Promise<void> {
           error.message.includes('ExitPromptError'))
       ) {
         console.log();
-        console.log(dim('  已退出'));
+        console.log(dim('  Exited'));
         process.exit(0);
       }
 
       console.log();
-      console.log(red(`  ✖ 错误: ${error instanceof Error ? error.message : String(error)}`));
+      console.log(red(`  ✖ Error: ${error instanceof Error ? error.message : String(error)}`));
       console.log();
 
       continueLoop = await confirm({
-        message: '是否重新尝试？',
+        message: 'Try again?',
         default: true,
       }).catch(() => false);
     }
   }
 
   console.log();
-  console.log(dim('  感谢使用 MindMap Converter 👋'));
+  console.log(dim('  Thanks for using MindMap Converter 👋'));
   console.log();
 }
