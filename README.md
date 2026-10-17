@@ -28,7 +28,7 @@ Existing output files are never overwritten unless you pass `--overwrite`.
 
 ## Web UI
 
-Live demo (preview): https://lakeboard-convert.ledring.workers.dev — moving to https://convert.ledring.dev soon.
+Live demo: https://convert.ledring.dev
 
 The web UI runs entirely in your browser: files never leave your machine. It is self-hosted with no third-party requests, including fonts. Run `npm run dev:web` locally, or try the bundled Lakeboard and XMind samples.
 
