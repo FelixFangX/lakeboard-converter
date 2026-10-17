@@ -8,5 +8,15 @@
   "assets": {
     "directory": "./dist-web",
     "not_found_handling": "single-page-application"
+  },
+  // Preview Worker: workers.dev only. `routes` is not inherited by environments,
+  // so the production custom domain is never attached here.
+  // Deploy: npx wrangler@3 deploy --env preview
+  "env": {
+    "preview": {
+      "name": "lakeboard-convert-preview",
+      "workers_dev": true,
+      "routes": []
+    }
   }
 }

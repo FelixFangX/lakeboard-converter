@@ -42,6 +42,8 @@ npm ci && npm run deploy:web
 
 `wrangler.jsonc` serves `dist-web/` as static assets with single-page application fallback.
 
+To deploy a preview build to `lakeboard-convert-preview.<subdomain>.workers.dev` instead (it has no custom domain), run `npm run build:web && npx wrangler@3 deploy --env preview`.
+
 ## For agents (MCP and `--json`)
 
 Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text).
