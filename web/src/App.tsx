@@ -1,382 +1,106 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { convertFile, type MindMapDocument, type MarkdownStyle, type TopicNode } from './converter.js';
+import { updateTabLED, type InstrumentState } from './tab-led.js';
 
-type ViewMode = 'source' | 'tree';
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function Ring({ large = false }: { large?: boolean }) {
+  return <span aria-hidden="true" className={`ring ${large ? 'ring-l' : 'ring-s'}`} />;
 }
-
-function TreeNodeView({ node, isRoot }: { node: TopicNode; isRoot?: boolean }) {
-  return (
-    <div className={`tree-node ${isRoot ? 'tree-root' : ''}`}>
-      <div className="tree-item">
-        <span className="tree-dot" />
-        <div>
-          <span className="tree-title">{node.title}</span>
-          {node.notes && <div className="tree-note">{node.notes}</div>}
-          {node.labels && node.labels.length > 0 && (
-            <div className="tree-labels">
-              {node.labels.map((label, i) => (
-                <span key={i} className="badge badge-blue">{label}</span>
-              ))}
-            </div>
-          )}
-          {node.href && (
-            <div className="tree-note">
-              <a href={node.href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-blue)', textDecoration: 'none' }}>
-                {node.href}
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-      {node.children.map((child) => (
-        <TreeNodeView key={child.id} node={child} />
-      ))}
-    </div>
-  );
+function Ruler() {
+  return <div className="ruler" aria-hidden="true">{Array.from({ length: 48 }, (_, i) => <i key={i} style={{ '--i': i } as React.CSSProperties} />)}</div>;
 }
-
-function UploadIcon() {
-  return (
-    <svg className="upload-zone-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M24 32V16" />
-      <path d="M16 22l8-8 8 8" />
-      <rect x="6" y="6" width="36" height="36" rx="4" />
-    </svg>
-  );
+function Tree({ node, root = false }: { node: TopicNode; root?: boolean }) {
+  return <div className={`tree-node ${root ? 'tree-root' : ''}`}><div className="tree-item"><span className="tree-dot" aria-hidden="true" /><div><span className="tree-title">{node.title}</span>{node.notes && <p>{node.notes}</p>}{node.labels?.map((label, i) => <span className="chip" key={i}>{label}</span>)}{node.href && <p>{node.href}</p>}</div></div>{node.children.map(child => <Tree key={child.id} node={child} />)}</div>;
 }
-
-function FileIcon({ ext }: { ext: string }) {
-  const color = 'var(--gray-500)';
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="2" width="18" height="20" rx="3" fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1.5" />
-      <text x="12" y="15" textAnchor="middle" fill={color} fontSize="6" fontWeight="600" fontFamily="var(--font-mono)">
-        {ext.toUpperCase()}
-      </text>
-    </svg>
-  );
-}
-
-function LogoIcon() {
-  return (
-    <svg className="logo-icon" viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="6" fill="var(--logo-bg)" />
-      <path d="M8 10h4v4H8zM16 10h4v4h-4zM12 14h4v4h-4z" fill="var(--logo-fg)" fillOpacity="0.9" />
-      <circle cx="14" cy="9" r="2" fill="var(--logo-fg)" />
-    </svg>
-  );
-}
+function bytes(size: number) { return size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`; }
 
 export function App() {
+  const [state, setState] = useState<InstrumentState>('idle');
   const [file, setFile] = useState<File | null>(null);
-  const [markdownStyle, setMarkdownStyle] = useState<MarkdownStyle>('generic');
-  const [markdown, setMarkdown] = useState<string>('');
-  const [document, setDocument] = useState<MindMapDocument | null>(null);
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('source');
-  const [dragging, setDragging] = useState(false);
+  const [style, setStyle] = useState<MarkdownStyle>('generic');
+  const [markdown, setMarkdown] = useState('');
+  const [map, setMap] = useState<MindMapDocument | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<'markdown' | 'tree'>('markdown');
   const [copied, setCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const operation = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => { updateTabLED(state); }, [state]);
+  useEffect(() => () => { ++operation.current; clearTimeout(timer.current); clearTimeout(copyTimer.current); }, []);
 
-  const processFile = useCallback(async (selectedFile: File, style: MarkdownStyle) => {
-    setLoading(true);
-    setError('');
+  const run = useCallback(async (source: File | 'lakeboard' | 'xmind', nextStyle: MarkdownStyle) => {
+    const id = ++operation.current;
+    clearTimeout(timer.current);
+    setBusy(true); setError(''); setCopied(false);
+    setState(map ? 'done' : 'idle');
+    timer.current = setTimeout(() => setState('processing'), 150);
     try {
-      const result = await convertFile(selectedFile, style);
-      setMarkdown(result.markdown);
-      setDocument(result.document);
+      let selected = source;
+      if (typeof selected === 'string') {
+        const response = await fetch(`/samples/sample.${selected}`);
+        if (!response.ok) throw new Error('The sample could not be loaded.');
+        const blob = await response.blob();
+        selected = new File([blob], `sample.${selected}`, { type: blob.type });
+      }
+      const result = await convertFile(selected, nextStyle);
+      if (id !== operation.current) return;
+      setFile(selected); setMarkdown(result.markdown); setMap(result.document); setView('markdown'); setState('done');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setMarkdown('');
-      setDocument(null);
+      if (id !== operation.current) return;
+      setError((e instanceof Error ? e.message : String(e)).replace(/\s+/g, ' ')); setMap(null); setMarkdown(''); setState('error');
     } finally {
-      setLoading(false);
+      if (id === operation.current) { clearTimeout(timer.current); setBusy(false); }
     }
-  }, []);
-
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setFile(selectedFile);
-    await processFile(selectedFile, markdownStyle);
-  }, [markdownStyle, processFile]);
-
-  const handleSample = useCallback(async (format: 'lakeboard' | 'xmind') => {
-    setLoading(true);
-    setError('');
-    try {
-      const name = `sample.${format}`;
-      const response = await fetch(`/samples/${name}`);
-      if (!response.ok) throw new Error('Could not load the sample. Please try again.');
-      const blob = await response.blob();
-      await handleFileSelect(new File([blob], name, { type: blob.type }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [handleFileSelect]);
-
-  const handleStyleChange = useCallback(async (style: MarkdownStyle) => {
-    setMarkdownStyle(style);
-    if (file) {
-      await processFile(file, style);
-    }
-  }, [file, processFile]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      handleFileSelect(droppedFile);
-    }
-  }, [handleFileSelect]);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(markdown);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for non-secure contexts
-      const textarea = window.document.createElement('textarea');
-      textarea.value = markdown;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      window.document.body.appendChild(textarea);
-      textarea.select();
-      window.document.execCommand('copy');
-      window.document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [markdown]);
-
-  const handleDownload = useCallback(() => {
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    const baseName = file?.name.replace(/\.[^.]+$/, '') ?? 'output';
-    a.download = `${baseName}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  }, [map]);
+  const reset = () => {
+    ++operation.current; clearTimeout(timer.current); setBusy(false); setMap(null); setFile(null); setMarkdown(''); setError(''); setCopied(false); setState('idle');
+    if (input.current) input.current.value = '';
+  };
+  const download = useCallback(() => {
+    const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
+    const a = document.createElement('a'); a.href = url; a.download = `${file?.name.replace(/\.[^.]+$/, '') ?? 'output'}.md`; a.click(); URL.revokeObjectURL(url);
   }, [markdown, file]);
-
-  const handleReset = useCallback(() => {
-    setFile(null);
-    setMarkdown('');
-    setDocument(null);
-    setError('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const copy = async () => {
+    try {
+      if (navigator.clipboard) await navigator.clipboard.writeText(markdown);
+      else throw new Error('Clipboard unavailable');
+    } catch {
+      const area = document.createElement('textarea'); area.value = markdown; area.style.position = 'fixed'; area.style.opacity = '0'; document.body.append(area); area.select();
+      const success = document.execCommand('copy'); area.remove();
+      if (!success) return;
     }
-  }, []);
-
-  const ext = file?.name.split('.').pop()?.toLowerCase() ?? '';
-
-  return (
-    <div className="layout">
-      <header className="header">
-        <div className="header-inner">
-          <a className="logo" href="/">
-            <LogoIcon />
-            <span className="logo-text">MindMap Converter</span>
-          </a>
-          <div className="nav-links">
-            <span className="badge badge-blue">.lakeboard</span>
-            <span className="badge badge-blue">.xmind</span>
-            <span style={{ color: 'var(--gray-400)', fontSize: 13 }}>→</span>
-            <span className="badge badge-green">.md</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="main">
-        {!file && (
-          <section className="hero">
-            <h1 className="hero-title">Mind map → Markdown</h1>
-            <p className="hero-subtitle">
-              Convert Yuque .lakeboard or XMind .xmind mind maps into structured Markdown, keeping nodes, notes, labels and links
-            </p>
-            <p className="privacy-note">Runs in your browser — files never leave your device.</p>
-          </section>
-        )}
-
-        {!file ? (
-          <>
-            <div
-              className={`upload-zone ${dragging ? 'dragging' : ''}`}
-              role="button"
-              tabIndex={0}
-              aria-label="Choose a Lakeboard or XMind file"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <UploadIcon />
-              <div className="upload-zone-title">
-                Drop a file here, or click to choose one
-              </div>
-              <div className="upload-zone-desc">
-                Supports .lakeboard (Yuque board) and .xmind (XMind Zen/2020+)
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                <span className="badge badge-blue">.lakeboard</span>
-                <span className="badge badge-blue">.xmind</span>
-              </div>
-              <input
-                ref={fileInputRef}
-                tabIndex={-1}
-                onClick={(e) => e.stopPropagation()}
-                type="file"
-                accept=".lakeboard,.xmind"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFileSelect(f);
-                }}
-              />
-            </div>
-            <div className="sample-options" aria-busy={loading}>
-              <span>No file handy? Try a sample:</span>
-              <button type="button" className="btn btn-secondary btn-sm" data-testid="sample-lakeboard" disabled={loading} onClick={() => handleSample('lakeboard')}>
-                Lakeboard sample
-              </button>
-              <button type="button" className="btn btn-secondary btn-sm" data-testid="sample-xmind" disabled={loading} onClick={() => handleSample('xmind')}>
-                XMind sample
-              </button>
-            </div>
-
-          </>
-        ) : (
-          <>
-            <div className="file-info">
-              <div className="file-icon">
-                <FileIcon ext={ext} />
-              </div>
-              <div className="file-details">
-                <div className="file-name">{file.name}</div>
-                <div className="file-meta">
-                  {formatBytes(file.size)} · {document?.format === 'xmind' ? 'XMind' : 'Lakeboard'}
-                </div>
-              </div>
-              <button className="file-remove" onClick={handleReset} title="Remove file" aria-label="Remove file">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M4 4l8 8M12 4l-8 8" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="options-bar">
-              <div className="option-group">
-                <label className="option-label" htmlFor="markdown-style">Style</label>
-                <select
-                  id="markdown-style"
-                  className="option-select"
-                  value={markdownStyle}
-                  onChange={(e) => handleStyleChange(e.target.value as MarkdownStyle)}
-                >
-                  <option value="generic">Generic Markdown</option>
-                  <option value="xmind">XMind import style</option>
-                </select>
-              </div>
-            </div>
-
-            {markdown && document && (
-              <div className="result-area">
-                <div className="result-header">
-                  <div className="result-info">
-                    <span className="result-stat">
-                      Nodes <strong>{document.nodeCount}</strong>
-                    </span>
-                    <span className="result-stat">
-                      Depth <strong>{document.maxDepth}</strong>
-                    </span>
-                  </div>
-                  <div className="result-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={handleCopy} aria-label="Copy Markdown to clipboard">
-                      {copied ? (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--success-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 8.5l3 3 7-7" />
-                          </svg>
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="5" y="5" width="9" height="9" rx="1.5" />
-                            <path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" />
-                          </svg>
-                          Copy
-                        </>
-                      )}
-                    </button>
-                    <button className="btn btn-primary btn-sm" onClick={handleDownload}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M8 2v9M4 8l4 4 4-4M2 13h12" />
-                      </svg>
-                      Download .md
-                    </button>
-                  </div>
-                </div>
-
-                <div className="preview-card">
-                  <div className="preview-toolbar">
-                    <div className="preview-tabs">
-                      <button
-                        className={`preview-tab ${viewMode === 'source' ? 'active' : ''}`}
-                        onClick={() => setViewMode('source')}
-                      >
-                        Markdown
-                      </button>
-                      <button
-                        className={`preview-tab ${viewMode === 'tree' ? 'active' : ''}`}
-                        onClick={() => setViewMode('tree')}
-                      >
-                        Tree preview
-                      </button>
-                    </div>
-                    <span style={{ fontSize: 12, color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>
-                      {markdown.split('\n').length} lines
-                    </span>
-                  </div>
-                  <div className="preview-content">
-                    {viewMode === 'source' ? (
-                      <pre>{markdown}</pre>
-                    ) : (
-                      <div className="tree-view">
-                        <TreeNodeView node={document.root} isRoot />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-        <div className="conversion-status" role="status" aria-live="polite">
-          {loading && <><div className="spinner" /><span>Converting…</span></>}
-        </div>
-        {error && <div className="error-message" role="alert">{error} Try another .lakeboard or .xmind file.</div>}
-      </main>
-
-      <footer className="footer">
-        MindMap Converter · supports .lakeboard and .xmind ·{' '}
-        <a href="https://github.com/FelixFangX/lakeboard-converter" target="_blank" rel="noopener noreferrer">GitHub</a>
-      </footer>
-    </div>
-  );
+    setCopied(true); clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 2000);
+  };
+  useEffect(() => {
+    const paste = (e: ClipboardEvent) => { const pasted = e.clipboardData?.files[0]; if (pasted) { e.preventDefault(); void run(pasted, style); } };
+    const key = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's' && map) { e.preventDefault(); download(); } };
+    window.addEventListener('paste', paste); window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('paste', paste); window.removeEventListener('keydown', key); };
+  }, [run, style, map, download]);
+  const lines = markdown.split('\n').length;
+  const errorSentence = error && (/[.!?]$/.test(error.trim()) ? error.trim() : `${error.trim()}.`);
+  const status = state === 'done' ? `STATE · DONE · ${lines} LINES · ${bytes(new Blob([markdown]).size)}` : state === 'armed' ? 'STATE · READY TO DROP' : state === 'processing' ? 'STATE ? PROCESSING' : state === 'error' ? `STATE · ERROR · ${errorSentence} Try another file.` : 'STATE · IDLE';
+  return <div className="layout">
+    <header className="header"><div className="header-inner"><a className="brand" href="https://ledring.dev" aria-label="ledring tools home"><Ring /><span className="label">LEDRING / TOOLS</span></a><span className="header-divider" /><span className="tool-name">Mind map converter</span><a className="github" href="https://github.com/FelixFangX/lakeboard-converter" aria-label="View source on GitHub"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" /></svg></a></div></header>
+    <main className={map ? 'main has-output' : 'main'}>
+      <input ref={input} hidden type="file" accept=".lakeboard,.xmind" onChange={e => { const selected = e.target.files?.[0]; if (selected) void run(selected, style); e.target.value = ''; }} />
+      {map ? <div className="output-heading"><span className="label">02 — OUTPUT</span><span className="chip file-chip">{file?.name} → {file?.name.replace(/\.[^.]+$/, '')}.md</span></div> : <div className="hero-copy"><span className="label">01 — CONVERT</span><h1>Mind map,<br /><span>to Markdown.</span></h1><p className="lead">Turn your thinking into clean, portable Markdown.</p><div className="spec-list">.lakeboard → .md<br />.xmind → .md<br />LOCAL ONLY · NOTHING UPLOADED</div></div>}
+      {!map && <section className="input-panel"><div className="well dropzone" data-testid="dropzone" role="button" tabIndex={0} aria-label="Choose or drop a Lakeboard or XMind file" aria-busy={busy}
+        onClick={() => input.current?.click()} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); input.current?.click(); } }}
+        onDragOver={e => { e.preventDefault(); if (!busy) setState('armed'); }} onDragLeave={e => { if (!(e.relatedTarget instanceof Node) || !e.currentTarget.contains(e.relatedTarget)) { if (!busy) setState(error ? 'error' : 'idle'); } }} onDrop={e => { e.preventDefault(); const dropped = e.dataTransfer.files[0]; if (dropped) void run(dropped, style); else setState(error ? 'error' : 'idle'); }}>
+        <Ruler /><Ring large /><p className="drop-title">{state === 'armed' ? 'RELEASE TO CONVERT' : 'Drop a .lakeboard or .xmind file'}</p><button className="primary" onClick={e => { e.stopPropagation(); input.current?.click(); }}>Choose file</button><span className="shortcut"><kbd>⌘ / Ctrl V</kbd> paste a file</span>
+        <div className="samples" onClick={e => e.stopPropagation()}><span>or try a sample:</span> <button data-testid="sample-lakeboard" aria-label="Try the Lakeboard sample" disabled={busy} onClick={() => void run('lakeboard', style)}>Lakeboard</button><span>·</span><button data-testid="sample-xmind" aria-label="Try the XMind sample" disabled={busy} onClick={() => void run('xmind', style)}>XMind</button></div>
+      </div><p className="hardware label">ACCEPTS .lakeboard .xmind · LOCAL ONLY · 0 BYTES UPLOADED</p></section>}
+      <div className={map ? undefined : 'feedback'}>
+        <div className="status label" data-testid="status-line" role="status" aria-live="polite">{status}</div>
+        {error && <div className="error-callout"><p>{errorSentence}</p><button data-testid="reset" onClick={reset}>Try another file →</button></div>}
+      </div>
+      {map && <section className="results" data-view={view}>
+        <div className="output-controls"><div className="segments" aria-label="Output view"><button aria-pressed={view === 'markdown'} onClick={() => setView('markdown')}>Markdown</button><button aria-pressed={view === 'tree'} onClick={() => setView('tree')}>Tree</button></div><label className="style-control">Style <select value={style} onChange={e => { const next = e.target.value as MarkdownStyle; setStyle(next); if (file) void run(file, next); }}><option value="generic">Generic</option><option value="xmind">XMind</option></select></label><button className="reset" data-testid="reset" onClick={reset}>Convert another →</button></div>
+        <div className="panes"><section className="tree-pane"><h2 className="label">TREE</h2><Tree node={map.root} root /></section><section className="well markdown-pane"><Ruler /><div className="markdown-heading"><h2 className="label">MARKDOWN</h2><div className="actions"><button className="primary" data-testid="download" onClick={download}>Download .md <kbd className="shortcut">⌘ / Ctrl S</kbd></button><button className={`copy ${copied ? 'copied' : ''}`} data-testid="copy" onClick={() => void copy()}>{copied && <Ring />}{copied ? 'Copied ✓' : 'Copy'}</button></div></div><div className="code-scroll"><div className="code-lines" aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</div><pre data-testid="markdown-output">{markdown}</pre></div></section></div>
+      </section>}
+    </main><footer className="footer"><span>RED MEANS RED · RUNS IN YOUR BROWSER · OPEN SOURCE</span></footer>
+  </div>;
 }
