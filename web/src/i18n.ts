@@ -1,0 +1,147 @@
+export const en = {
+  "brand": "LEDRING / TOOLS",
+  "home": "ledring tools home",
+  "tool": "Mind map converter",
+  "github": "View source on GitHub",
+  "convert": "01 — CONVERT",
+  "output": "02 — OUTPUT",
+  "hero": "Mind map,",
+  "heroEnd": "to Markdown.",
+  "lead": "Turn your thinking into clean, portable Markdown.",
+  "local": "LOCAL ONLY · NOTHING UPLOADED",
+  "chooseAria": "Choose or drop a Lakeboard or XMind file",
+  "release": "RELEASE TO CONVERT",
+  "drop": "Drop a .lakeboard or .xmind file",
+  "choose": "Choose file",
+  "paste": "paste a file",
+  "samples": "or try a sample:",
+  "sampleLakeboard": "Try the Lakeboard sample",
+  "sampleXmind": "Try the XMind sample",
+  "hardware": "ACCEPTS .lakeboard .xmind · LOCAL ONLY · 0 BYTES UPLOADED",
+  "idle": "STATE · IDLE",
+  "armed": "STATE · READY TO DROP",
+  "processing": "STATE · PROCESSING",
+  "done": "STATE · DONE",
+  "error": "STATE · ERROR",
+  "lines": "LINES",
+  "retryStatus": "Try another file.",
+  "retry": "Try another file →",
+  "view": "Output view",
+  "tree": "Tree",
+  "treeHeading": "TREE",
+  "markdown": "Markdown",
+  "markdownHeading": "MARKDOWN",
+  "style": "Style",
+  "generic": "Generic",
+  "xmind": "XMind",
+  "another": "Convert another →",
+  "download": "Download .md",
+  "copy": "Copy",
+  "copied": "Copied ✓",
+  "footer": "RED MEANS RED · RUNS IN YOUR BROWSER · OPEN SOURCE",
+  "switchLanguage": "Switch to Chinese",
+  "title": "Mind map to Markdown · ledring tools",
+  "description": "Convert Lakeboard and XMind files to Markdown locally in your browser. Nothing is uploaded.",
+  "tabDone": "● Done · ",
+  "tabError": "● Error · ",
+  "tabWorking": "● Working · ",
+  "errorGeneric": "This file could not be converted.",
+  "errorSample": "The sample could not be loaded.",
+  "errorZip": "Cannot unzip .xmind file: it may be corrupt or not a valid ZIP archive.",
+  "errorOld": "This .xmind file is missing content.json. Only XMind Zen/2020+ is supported.",
+  "errorXmindJson": "Failed to parse content.json in the .xmind file.",
+  "errorSheets": "No sheets found in the .xmind file.",
+  "errorRoot": "The first sheet in the .xmind file has no root topic.",
+  "errorLakeJson": "Failed to parse .lakeboard file: invalid JSON.",
+  "errorLakeFormat": "Input is not a supported Lakeboard JSON file.",
+  "errorBody": "Lakeboard file is missing diagramData.body.",
+  "errorMindmap": "No convertible mind map root node found.",
+  "errorFormat": "Unsupported file format. Choose a .lakeboard or .xmind file."
+} as const;
+export type TranslationKey = keyof typeof en;
+export type Language = 'en' | 'zh';
+export const zh: Record<TranslationKey, string> = {
+  "brand": "LEDRING / 工具",
+  "home": "LEDRING 工具首页",
+  "tool": "思维导图转换器",
+  "github": "在 GitHub 查看源码",
+  "convert": "01 — 转换",
+  "output": "02 — 输出",
+  "hero": "思维导图，",
+  "heroEnd": "转为 Markdown。",
+  "lead": "将你的思路转为简洁、便于携带的 Markdown。",
+  "local": "仅在本地处理 · 不上传任何内容",
+  "chooseAria": "选择或拖入 Lakeboard 或 XMind 文件",
+  "release": "松开即可转换",
+  "drop": "拖入 .lakeboard 或 .xmind 文件",
+  "choose": "选择文件",
+  "paste": "粘贴文件",
+  "samples": "或试用示例：",
+  "sampleLakeboard": "试用 Lakeboard 示例",
+  "sampleXmind": "试用 XMind 示例",
+  "hardware": "支持 .lakeboard .xmind · 仅在本地处理 · 上传 0 字节",
+  "idle": "状态 · 空闲",
+  "armed": "状态 · 等待放入",
+  "processing": "状态 · 正在转换",
+  "done": "状态 · 已完成",
+  "error": "状态 · 出错",
+  "lines": "行",
+  "retryStatus": "请尝试其他文件。",
+  "retry": "尝试其他文件 →",
+  "view": "输出视图",
+  "tree": "树状图",
+  "treeHeading": "树状图",
+  "markdown": "Markdown",
+  "markdownHeading": "Markdown",
+  "style": "样式",
+  "generic": "通用",
+  "xmind": "XMind",
+  "another": "转换其他文件 →",
+  "download": "下载 .md",
+  "copy": "复制",
+  "copied": "已复制 ✓",
+  "footer": "红色即警示 · 在浏览器中运行 · 开源",
+  "switchLanguage": "切换到英文",
+  "title": "思维导图转 Markdown · LEDRING 工具",
+  "description": "在浏览器中将 Lakeboard 和 XMind 文件转为 Markdown。仅在本地处理，不上传任何内容。",
+  "tabDone": "● 已完成 · ",
+  "tabError": "● 出错 · ",
+  "tabWorking": "● 正在转换 · ",
+  "errorGeneric": "无法转换此文件。",
+  "errorSample": "无法加载示例。",
+  "errorZip": "无法解压 .xmind 文件：文件可能已损坏或不是有效的 ZIP 压缩包。",
+  "errorOld": "此 .xmind 文件缺少 content.json。仅支持 XMind Zen/2020+。",
+  "errorXmindJson": "无法解析 .xmind 文件中的 content.json。",
+  "errorSheets": "未在 .xmind 文件中找到画布。",
+  "errorRoot": "此 .xmind 文件的首个画布没有根节点。",
+  "errorLakeJson": "无法解析 .lakeboard 文件：JSON 格式无效。",
+  "errorLakeFormat": "此文件不是受支持的 Lakeboard JSON 文件。",
+  "errorBody": "Lakeboard 文件缺少 diagramData.body。",
+  "errorMindmap": "未找到可转换的思维导图根节点。",
+  "errorFormat": "不支持此文件格式。请选择 .lakeboard 或 .xmind 文件。"
+};
+
+export function t(language: Language, key: TranslationKey): string { return (language === 'zh' ? zh : en)[key]; }
+export function detectLanguage(): Language {
+  const query = new URLSearchParams(window.location.search).get('lang');
+  if (query === 'en' || query === 'zh') { persistLanguage(query); return query; }
+  try {
+    const stored = localStorage.getItem('ledring-lang');
+    if (stored === 'en' || stored === 'zh') return stored;
+  } catch { /* Storage may be unavailable. */ }
+  return (navigator.languages?.[0] || navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+export function persistLanguage(language: Language) {
+  try { localStorage.setItem('ledring-lang', language); } catch { /* Keep the current session usable. */ }
+}
+export function updateLanguage(language: Language) {
+  document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+  document.title = t(language, 'title');
+  for (const [selector, key] of [
+    ['meta[name="description"]', 'description'], ['meta[property="og:title"]', 'title'],
+    ['meta[property="og:description"]', 'description'], ['meta[name="twitter:title"]', 'title'],
+    ['meta[name="twitter:description"]', 'description'],
+  ] as const) document.querySelector(selector)?.setAttribute('content', t(language, key));
+}
+export const initialLanguage: Language = typeof window === 'undefined' ? 'en' : detectLanguage();
+if (typeof document !== 'undefined') updateLanguage(initialLanguage);
