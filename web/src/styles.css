@@ -223,6 +223,22 @@ body {
   cursor: pointer;
 }
 
+.sample-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.sample-options .btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 /* Badge */
 .badge {
   display: inline-flex;

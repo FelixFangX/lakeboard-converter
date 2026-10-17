@@ -105,6 +105,22 @@ export function App() {
     await processFile(selectedFile, markdownStyle);
   }, [markdownStyle, processFile]);
 
+  const handleSample = useCallback(async (format: 'lakeboard' | 'xmind') => {
+    setLoading(true);
+    setError('');
+    try {
+      const name = `sample.${format}`;
+      const response = await fetch(`/samples/${name}`);
+      if (!response.ok) throw new Error('Could not load the sample. Please try again.');
+      const blob = await response.blob();
+      await handleFileSelect(new File([blob], name, { type: blob.type }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [handleFileSelect]);
+
   const handleStyleChange = useCallback(async (style: MarkdownStyle) => {
     setMarkdownStyle(style);
     if (file) {
@@ -192,34 +208,46 @@ export function App() {
         )}
 
         {!file ? (
-          <div
-            className={`upload-zone ${dragging ? 'dragging' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <UploadIcon />
-            <div className="upload-zone-title">
-              Drop a file here, or click to choose one
+          <>
+            <div
+              className={`upload-zone ${dragging ? 'dragging' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <UploadIcon />
+              <div className="upload-zone-title">
+                Drop a file here, or click to choose one
+              </div>
+              <div className="upload-zone-desc">
+                Supports .lakeboard (Yuque board) and .xmind (XMind Zen/2020+)
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                <span className="badge badge-blue">.lakeboard</span>
+                <span className="badge badge-blue">.xmind</span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".lakeboard,.xmind"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileSelect(f);
+                }}
+              />
             </div>
-            <div className="upload-zone-desc">
-              Supports .lakeboard (Yuque board) and .xmind (XMind Zen/2020+)
+            <div className="sample-options" aria-busy={loading}>
+              <span>No file handy? Try a sample:</span>
+              <button type="button" className="btn btn-secondary btn-sm" data-testid="sample-lakeboard" disabled={loading} onClick={() => handleSample('lakeboard')}>
+                Lakeboard sample
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" data-testid="sample-xmind" disabled={loading} onClick={() => handleSample('xmind')}>
+                XMind sample
+              </button>
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <span className="badge badge-blue">.lakeboard</span>
-              <span className="badge badge-blue">.xmind</span>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".lakeboard,.xmind"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileSelect(f);
-              }}
-            />
-          </div>
+            {error && <div className="error-message" role="alert">{error}</div>}
+          </>
         ) : (
           <>
             <div className="file-info">
