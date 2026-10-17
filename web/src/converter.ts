@@ -299,3 +299,22 @@ export async function convertFile(
   const markdown = renderMarkdown(document, style);
   return { markdown, document };
 }
+
+// Keep parser details out of UI messages, including unexpected third-party errors.
+export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey {
+  const message = error instanceof Error ? error.message : '';
+  const patterns = [
+    [/^The sample could not be loaded/, 'errorSample'],
+    [/^Cannot unzip/, 'errorZip'],
+    [/^\.xmind file is missing content.json/, 'errorOld'],
+    [/^Failed to parse content.json/, 'errorXmindJson'],
+    [/^No sheets found/, 'errorSheets'],
+    [/^The first sheet.*no rootTopic/, 'errorRoot'],
+    [/^Failed to parse .lakeboard file/, 'errorLakeJson'],
+    [/^Input is not a supported lakeboard/, 'errorLakeFormat'],
+    [/^lakeboard file is missing/, 'errorBody'],
+    [/^No convertible mindmap/, 'errorMindmap'],
+    [/^Unsupported file format/, 'errorFormat'],
+  ] as const;
+  return patterns.find(([pattern]) => pattern.test(message))?.[1] ?? 'errorGeneric';
+}

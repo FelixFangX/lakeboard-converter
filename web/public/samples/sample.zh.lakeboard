@@ -1,0 +1,42 @@
+{
+  "format": "lakeboard",
+  "diagramData": {
+    "body": [
+      {
+        "id": "root-1",
+        "type": "mindmap",
+        "html": "<p>Lakeboard 示例根节点</p>",
+        "children": [
+          {
+            "id": "node-1",
+            "html": "<p>分支 <strong>甲</strong></p>",
+            "children": [
+              {
+                "id": "node-1-1",
+                "html": "<p>子节点 甲.1</p>"
+              },
+              {
+                "id": "node-1-2",
+                "html": "<p>子节点 甲.2</p>"
+              }
+            ]
+          },
+          {
+            "id": "node-2",
+            "html": "<p>分支 乙</p>",
+            "children": [
+              {
+                "id": "node-2-1",
+                "html": "<p>子节点 乙.1</p>"
+              }
+            ]
+          },
+          {
+            "id": "node-3",
+            "html": "<p>分支 丙</p>"
+          }
+        ]
+      }
+    ]
+  }
+}
