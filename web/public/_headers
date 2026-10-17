@@ -1,0 +1,4 @@
+# Opt out of Cloudflare edge HTML rewriting (e.g. the zone-wide Web Analytics beacon),
+# so the page makes no third-party requests.
+/*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
