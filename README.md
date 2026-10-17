@@ -26,6 +26,22 @@ Requires Node 18+.
 
 Existing output files are never overwritten unless you pass `--overwrite`.
 
+## Web UI
+
+Live demo: https://convert.ledring.dev
+
+The web UI runs entirely in your browser: files never leave your machine. It is self-hosted with no third-party requests, including fonts. Run `npm run dev:web` locally, or try the bundled Lakeboard and XMind samples.
+
+### Deploy (Cloudflare Workers)
+
+With `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` set in your environment:
+
+```bash
+npm ci && npm run deploy:web
+```
+
+`wrangler.jsonc` serves `dist-web/` as static assets with single-page application fallback.
+
 ## For agents (MCP and `--json`)
 
 Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text).

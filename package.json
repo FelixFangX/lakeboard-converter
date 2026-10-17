@@ -15,6 +15,7 @@
     "dev:web": "vite",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:web": "vite build",
+    "deploy:web": "npm run build:web && npx wrangler@3 deploy",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "test": "vitest run",
     "convert": "tsx src/cli.ts convert",
@@ -47,6 +48,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

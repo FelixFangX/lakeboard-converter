@@ -1,0 +1,33 @@
+{
+  "format": "lakeboard",
+  "diagramData": {
+    "body": [
+      {
+        "id": "root-1",
+        "type": "mindmap",
+        "html": "<p>Lakeboard Test Root</p>",
+        "children": [
+          {
+            "id": "node-1",
+            "html": "<p>Branch <strong>Alpha</strong></p>",
+            "children": [
+              { "id": "node-1-1", "html": "<p>Sub-item Alpha.1</p>" },
+              { "id": "node-1-2", "html": "<p>Sub-item Alpha.2</p>" }
+            ]
+          },
+          {
+            "id": "node-2",
+            "html": "<p>Branch Beta</p>",
+            "children": [
+              { "id": "node-2-1", "html": "<p>Sub-item Beta.1</p>" }
+            ]
+          },
+          {
+            "id": "node-3",
+            "html": "<p>Branch Gamma</p>"
+          }
+        ]
+      }
+    ]
+  }
+}
