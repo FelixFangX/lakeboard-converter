@@ -51,7 +51,7 @@ function UploadIcon() {
 }
 
 function FileIcon({ ext }: { ext: string }) {
-  const color = ext === 'xmind' ? '#eb367f' : '#0072f5';
+  const color = 'var(--gray-500)';
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <rect x="3" y="2" width="18" height="20" rx="3" fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1.5" />
@@ -65,9 +65,9 @@ function FileIcon({ ext }: { ext: string }) {
 function LogoIcon() {
   return (
     <svg className="logo-icon" viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="6" fill="#171717" />
-      <path d="M8 10h4v4H8zM16 10h4v4h-4zM12 14h4v4h-4z" fill="#fff" fillOpacity="0.9" />
-      <circle cx="14" cy="9" r="2" fill="#fff" />
+      <rect width="28" height="28" rx="6" fill="var(--logo-bg)" />
+      <path d="M8 10h4v4H8zM16 10h4v4h-4zM12 14h4v4h-4z" fill="var(--logo-fg)" fillOpacity="0.9" />
+      <circle cx="14" cy="9" r="2" fill="var(--logo-fg)" />
     </svg>
   );
 }
@@ -204,6 +204,7 @@ export function App() {
             <p className="hero-subtitle">
               Convert Yuque .lakeboard or XMind .xmind mind maps into structured Markdown, keeping nodes, notes, labels and links
             </p>
+            <p className="privacy-note">Runs in your browser — files never leave your device.</p>
           </section>
         )}
 
@@ -211,6 +212,15 @@ export function App() {
           <>
             <div
               className={`upload-zone ${dragging ? 'dragging' : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-label="Choose a Lakeboard or XMind file"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
@@ -229,6 +239,8 @@ export function App() {
               </div>
               <input
                 ref={fileInputRef}
+                tabIndex={-1}
+                onClick={(e) => e.stopPropagation()}
                 type="file"
                 accept=".lakeboard,.xmind"
                 onChange={(e) => {
@@ -246,7 +258,7 @@ export function App() {
                 XMind sample
               </button>
             </div>
-            {error && <div className="error-message" role="alert">{error}</div>}
+
           </>
         ) : (
           <>
@@ -260,7 +272,7 @@ export function App() {
                   {formatBytes(file.size)} · {document?.format === 'xmind' ? 'XMind' : 'Lakeboard'}
                 </div>
               </div>
-              <button className="file-remove" onClick={handleReset} title="Remove file">
+              <button className="file-remove" onClick={handleReset} title="Remove file" aria-label="Remove file">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M4 4l8 8M12 4l-8 8" />
                 </svg>
@@ -269,8 +281,9 @@ export function App() {
 
             <div className="options-bar">
               <div className="option-group">
-                <span className="option-label">Style</span>
+                <label className="option-label" htmlFor="markdown-style">Style</label>
                 <select
+                  id="markdown-style"
                   className="option-select"
                   value={markdownStyle}
                   onChange={(e) => handleStyleChange(e.target.value as MarkdownStyle)}
@@ -281,23 +294,7 @@ export function App() {
               </div>
             </div>
 
-            {error && (
-              <div className="error-message">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 4a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0V5zm.75 6.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '24px 0', justifyContent: 'center' }}>
-                <div className="spinner" />
-                <span style={{ color: 'var(--gray-500)', fontSize: 14 }}>Converting…</span>
-              </div>
-            )}
-
-            {markdown && document && !loading && (
+            {markdown && document && (
               <div className="result-area">
                 <div className="result-header">
                   <div className="result-info">
@@ -370,6 +367,10 @@ export function App() {
             )}
           </>
         )}
+        <div className="conversion-status" role="status" aria-live="polite">
+          {loading && <><div className="spinner" /><span>Converting…</span></>}
+        </div>
+        {error && <div className="error-message" role="alert">{error} Try another .lakeboard or .xmind file.</div>}
       </main>
 
       <footer className="footer">
