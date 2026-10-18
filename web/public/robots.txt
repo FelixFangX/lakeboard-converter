@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://convert.ledring.dev/sitemap.xml

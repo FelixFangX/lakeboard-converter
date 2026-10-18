@@ -3,6 +3,9 @@
 # as the single-page-application fallback for unknown paths.
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 # Vite emits content-hashed file names under /assets/, so they can be cached forever.
 # No `no-transform` here: it would stop Cloudflare from compressing JS and CSS, and
@@ -16,3 +19,11 @@
 /fonts/*
   ! Cache-Control
   Cache-Control: public, max-age=2592000
+
+/og.png
+  ! Cache-Control
+  Cache-Control: public, max-age=86400
+
+/apple-touch-icon.png
+  ! Cache-Control
+  Cache-Control: public, max-age=86400
