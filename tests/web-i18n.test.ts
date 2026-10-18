@@ -22,7 +22,16 @@ describe('web translations', () => {
     const html = renderToStaticMarkup(createElement(App));
     expect(html).toContain('<span lang="zh-CN">中文</span>');
     expect(html.replace('<span lang="zh-CN">中文</span>', '')).not.toMatch(cjk);
-    expect(html).toContain('Switch to Chinese');
+    expect(html).toContain('<span lang="zh-CN">中文</span><span class="sr-only">Switch to Chinese</span>');
+    expect(html).not.toContain('aria-label="Switch to Chinese"');
+    expect(html).toContain(`aria-label="${en.chooseAria}"`);
+    expect(html).toContain(`<p class="drop-title">${en.drop}</p>`);
+  });
+
+  it('starts dropzone accessible names with the visible label in both languages', () => {
+    for (const dictionary of [en, zh]) {
+      expect(dictionary.chooseAria.startsWith(dictionary.drop)).toBe(true);
+    }
   });
 
   it('prefers and persists the query, then storage, then browser language', () => {
@@ -88,7 +97,10 @@ it('renders natural Chinese on the initial render when requested', async () => {
   const { App: ChineseApp } = await import('../web/src/App.js');
   const html = renderToStaticMarkup(createElement(ChineseApp));
   expect(html).toContain('思维导图转换器');
-  expect(html).toContain('切换到英文');
+  expect(html).toContain('<span lang="en">EN</span><span class="sr-only">切换到英文</span>');
+  expect(html).not.toContain('aria-label="切换到英文"');
+  expect(html).toContain(`aria-label="${zh.chooseAria}"`);
+  expect(html).toContain(`<p class="drop-title">${zh.drop}</p>`);
   expect(html).toContain('<span lang="en">EN</span>');
   expect(html).not.toContain('Choose file');
 });
