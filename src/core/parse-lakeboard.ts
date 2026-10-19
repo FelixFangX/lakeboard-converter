@@ -49,6 +49,7 @@ function parseLakeboardData(data: RawLakeboardFile, sourcePath?: string): MindMa
   return {
     sourcePath,
     format: 'lakeboard',
+    sheets: [{ index: 1, title: root.title, root, nodeCount, maxDepth }],
     root,
     nodeCount,
     maxDepth,

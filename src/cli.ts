@@ -21,6 +21,7 @@ program
   .option('-o, --output <path>', 'Output file path (single export format only)')
   .option('--out-dir <dir>', 'Output directory')
   .option('--overwrite', 'Allow overwriting existing files', false)
+  .option('--sheet <index|name>', 'Select a sheet by index or title')
   .option('--json', 'print a machine-readable JSON result', false)
   .action(async (input, options) => {
     try {
@@ -33,6 +34,7 @@ program
 
       const result = await convertFile({
         input,
+        sheet: options.sheet,
         format: options.format,
         markdownStyle: options.markdownStyle,
         output: options.output,
@@ -44,6 +46,7 @@ program
         console.log(JSON.stringify({ schemaVersion: 1, ...result }));
         return;
       }
+      if (result.selectedSheet) console.log(`Sheet ${result.selectedSheet.index}: ${result.selectedSheet.title}`);
       console.log(`Done: ${result.nodeCount} nodes, max depth ${result.maxDepth}`);
       for (const output of result.outputs) {
         console.log(`Wrote: ${output}`);
@@ -59,13 +62,19 @@ program
   .command('read')
   .description('Print a mind map to stdout for agents and scripts (never writes files)')
   .argument('<input>', '.lakeboard or .xmind file')
+  .option('--max-nodes <n>', 'Maximum output nodes (default: 2000)', Number)
+  .option('--max-depth <n>', 'Maximum topic depth (root = 0)', Number)
   .option('-f, --format <format>', 'md | json | outline', 'md')
+  .option('--sheet <index|name>', 'Select a sheet by index or title')
   .option('--json', 'wrap the result in a stable JSON envelope', false)
   .action(async (input, options) => {
     try {
-      const result = await readMindMap(input, options.format as AgentFormat);
+      const result = await readMindMap(input, options.format as AgentFormat, options);
       if (options.json) console.log(JSON.stringify(result));
-      else process.stdout.write(typeof result.content === 'string' ? result.content : `${JSON.stringify(result.content, null, 2)}\n`);
+      else {
+        process.stdout.write(typeof result.content === 'string' ? result.content : `${JSON.stringify(result.content, null, 2)}\n`);
+        if (result.warnings.length) process.stdout.write(`> Note: ${result.warnings.join(' ')}\n`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(options.json ? JSON.stringify({ error: message }) : message);

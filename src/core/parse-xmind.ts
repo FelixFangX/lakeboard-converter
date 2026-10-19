@@ -69,19 +69,15 @@ export async function parseXmindBuffer(
     throw new Error('No sheets found in the .xmind file');
   }
 
-  const sheet = sheets[0];
-  if (!sheet.rootTopic) {
-    throw new Error('The first sheet in the .xmind file has no rootTopic');
-  }
-
-  const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
-  const { nodeCount, maxDepth } = validateTree(root);
-
+  const parsedSheets = sheets.map((sheet, offset) => {
+    if (!sheet.rootTopic) throw new Error(`Sheet ${offset + 1} in the .xmind file has no rootTopic`);
+    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
+    return { index: offset + 1, title: sheet.title?.trim() || `Sheet ${offset + 1}`, root, ...validateTree(root) };
+  });
   return {
     sourcePath,
-    format: 'xmind',
-    root,
-    nodeCount,
-    maxDepth,
+    format: 'xmind', sheets: parsedSheets, root: parsedSheets[0].root,
+    nodeCount: parsedSheets.reduce((sum, sheet) => sum + sheet.nodeCount, 0),
+    maxDepth: Math.max(...parsedSheets.map(sheet => sheet.maxDepth)),
   };
 }
