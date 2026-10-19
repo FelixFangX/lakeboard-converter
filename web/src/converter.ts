@@ -11,6 +11,7 @@ export interface TopicNode {
 }
 
 export interface MindMapDocument {
+  sheets: { index: number; title: string; root: TopicNode; nodeCount: number; maxDepth: number }[];
   format: 'lakeboard' | 'xmind';
   root: TopicNode;
   nodeCount: number;
@@ -140,7 +141,7 @@ function parseLakeboardContent(content: string): MindMapDocument {
   const root = normalizeTree(convertLakeboardNode(rootRaw, 0));
   const { nodeCount, maxDepth } = validateTree(root);
 
-  return { format: 'lakeboard', root, nodeCount, maxDepth };
+  return { format: 'lakeboard', root, nodeCount, maxDepth, sheets: [{ index: 1, title: root.title, root, nodeCount, maxDepth }] };
 }
 
 // ─── XMind parser ───
@@ -206,74 +207,73 @@ async function parseXmindBuffer(buffer: ArrayBuffer): Promise<MindMapDocument> {
     throw new Error('No sheets found in the .xmind file');
   }
 
-  const sheet = sheets[0];
-  if (!sheet.rootTopic) {
-    throw new Error('The first sheet in the .xmind file has no rootTopic');
-  }
-
-  const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
-  const { nodeCount, maxDepth } = validateTree(root);
-
-  return { format: 'xmind', root, nodeCount, maxDepth };
+  const parsedSheets = sheets.map((sheet, offset) => {
+    if (!sheet.rootTopic) throw new Error(`Sheet ${offset + 1} in the .xmind file has no rootTopic`);
+    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
+    return { index: offset + 1, title: sheet.title?.trim() || `Sheet ${offset + 1}`, root, ...validateTree(root) };
+  });
+  return {
+    format: 'xmind', sheets: parsedSheets, root: parsedSheets[0].root,
+    nodeCount: parsedSheets.reduce((sum, sheet) => sum + sheet.nodeCount, 0),
+    maxDepth: Math.max(...parsedSheets.map(sheet => sheet.maxDepth)),
+  };
 }
 
 // ─── Markdown renderer ───
 
-function renderGenericNode(
-  lines: string[],
-  node: TopicNode,
-  depth: number,
-): void {
-  const indent = '  '.repeat(depth);
-  if (depth === 0) {
-    lines.push(`# ${node.title}`);
-  } else {
-    const text = node.title.split('\n');
-    lines.push(`${indent}- ${text[0]}`);
-    for (const line of text.slice(1)) {
-      lines.push(`${indent}  ${line}`);
-    }
-  }
+function title(node: TopicNode): string {
+  const text = node.href ? `[${node.title.replace(/\\/g, '\\\\').replace(/\[/g, '\\[').replace(/\]/g, '\\]')}](${node.href})` : node.title;
+  return text + (node.labels ?? []).map(label => {
+    const fence = '`'.repeat(Math.max(0, ...(label.match(/`+/g) ?? []).map(s => s.length)) + 1);
+    const padding = label.includes('`') || /^ | $/.test(label) ? ' ' : '';
+    return ` ${fence}${padding}${label}${padding}${fence}`;
+  }).join('');
+}
 
+function walkGeneric(lines: string[], node: TopicNode, depth: number, multi: boolean): void {
+  const indent = '  '.repeat(Math.max(0, depth - 1));
+  const text = title(node).split('\n');
+  lines.push(depth === 0 ? `${multi ? '##' : '#'} ${text[0]}` : `${indent}- ${text[0]}`);
+  text.slice(1).forEach(line => lines.push(`${depth === 0 ? '' : indent + '  '}${line}`));
   if (node.notes) {
-    const noteIndent = depth === 0 ? '' : `${indent}  `;
-    lines.push(
-      `${noteIndent}> ${node.notes.split('\n').join(`\n${noteIndent}> `)}`,
-    );
+    const noteIndent = depth === 0 ? '' : indent + '  ';
+    lines.push(`${noteIndent}> ${node.notes.split('\n').join(`\n${noteIndent}> `)}`);
   }
-
-  if (node.href) {
-    const linkIndent = depth === 0 ? '' : `${indent}  `;
-    lines.push(`${linkIndent}[Link](${node.href})`);
-  }
+  node.children.forEach(child => walkGeneric(lines, child, depth + 1, multi));
 }
 
-function walkGeneric(lines: string[], node: TopicNode, depth: number): void {
-  renderGenericNode(lines, node, depth);
-  node.children.forEach((child) => walkGeneric(lines, child, depth + 1));
+function walkList(lines: string[], node: TopicNode, depth: number, outline: boolean): void {
+  const labels = outline && node.labels?.length ? ` [${node.labels.join(', ')}]` : '';
+  lines.push(`${'    '.repeat(depth)}- ${flattenMultilineText(node.title)}${labels}`);
+  node.children.forEach(child => walkList(lines, child, depth + 1, outline));
 }
 
-function walkXmindStyle(
-  lines: string[],
-  node: TopicNode,
-  depth: number,
-): void {
-  const indent = '    '.repeat(depth);
-  lines.push(`${indent}- ${flattenMultilineText(node.title)}`);
-  node.children.forEach((child) => walkXmindStyle(lines, child, depth + 1));
+function renderGenericMarkdown(document: MindMapDocument): string {
+  return document.sheets.map(sheet => {
+    const lines: string[] = document.sheets.length > 1 ? [`# ${sheet.title}`] : [];
+    walkGeneric(lines, sheet.root, 0, document.sheets.length > 1);
+    return lines.join('\n');
+  }).join('\n\n') + '\n';
 }
 
-function renderMarkdown(
-  document: MindMapDocument,
-  style: MarkdownStyle,
-): string {
-  const lines: string[] = [];
-  if (style === 'xmind') {
-    walkXmindStyle(lines, document.root, 0);
-  } else {
-    walkGeneric(lines, document.root, 0);
-  }
-  return `${lines.join('\n')}\n`;
+function renderXmindMarkdown(document: MindMapDocument): string {
+  return renderLists(document, false);
+}
+
+function renderOutline(document: MindMapDocument): string {
+  return renderLists(document, true);
+}
+
+function renderLists(document: MindMapDocument, outline: boolean): string {
+  return document.sheets.map(sheet => {
+    const lines = outline && document.sheets.length > 1 ? [`# ${sheet.title}`] : [];
+    walkList(lines, sheet.root, 0, outline);
+    return lines.join('\n');
+  }).join('\n\n') + '\n';
+}
+
+function renderMarkdown(document: MindMapDocument, style: MarkdownStyle): string {
+  return style === 'xmind' ? renderXmindMarkdown(document) : renderGenericMarkdown(document);
 }
 
 // ─── Public API ───
@@ -309,7 +309,7 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
     [/^\.xmind file is missing content.json/, 'errorOld'],
     [/^Failed to parse content.json/, 'errorXmindJson'],
     [/^No sheets found/, 'errorSheets'],
-    [/^The first sheet.*no rootTopic/, 'errorRoot'],
+    [/^Sheet .*no rootTopic/, 'errorRoot'],
     [/^Failed to parse .lakeboard file/, 'errorLakeJson'],
     [/^Input is not a supported lakeboard/, 'errorLakeFormat'],
     [/^lakeboard file is missing/, 'errorBody'],

@@ -11,7 +11,16 @@ export interface TopicNode {
 
 export type SourceFormat = 'lakeboard' | 'xmind';
 
+export interface MindMapSheet {
+  index: number;
+  title: string;
+  root: TopicNode;
+  nodeCount: number;
+  maxDepth: number;
+}
+
 export interface MindMapDocument {
+  sheets: MindMapSheet[];
   sourcePath?: string;
   format: SourceFormat;
   root: TopicNode;

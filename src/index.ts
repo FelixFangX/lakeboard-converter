@@ -1,3 +1,4 @@
+import { selectSheet } from './core/select-sheet.js';
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { MarkdownStyle, MindMapDocument, SourceFormat } from './core/types.js';
@@ -12,15 +13,17 @@ export { parseXmindFile, parseXmindBuffer } from './core/parse-xmind.js';
 export { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 export { renderXmind } from './render/xmind.js';
 export { readMindMap, AGENT_FORMATS } from './agent.js';
-export type { AgentFormat, AgentReadResult, AgentTopic } from './agent.js';
+export type { AgentFormat, AgentReadResult, AgentTopic, ReadOptions } from './agent.js';
 
 export interface ConvertResult {
+  selectedSheet?: { index: number; title: string };
   outputs: string[];
   nodeCount: number;
   maxDepth: number;
 }
 
 export interface ConvertInputOptions {
+  sheet?: string | number;
   input: string;
   format: 'md' | 'xmind' | 'both';
   markdownStyle: MarkdownStyle;
@@ -78,7 +81,7 @@ async function parseInputFile(filePath: string): Promise<MindMapDocument> {
 }
 
 export async function convertFile(options: ConvertInputOptions): Promise<ConvertResult> {
-  const document = await parseInputFile(options.input);
+  const document = selectSheet(await parseInputFile(options.input), options.sheet);
   const { mdPath, xmindPath } = resolveOutputPaths(options);
   const outputs: string[] = [];
 
@@ -102,6 +105,7 @@ export async function convertFile(options: ConvertInputOptions): Promise<Convert
 
   return {
     outputs,
+    ...(options.sheet !== undefined ? { selectedSheet: { index: document.sheets[0].index, title: document.sheets[0].title } } : {}),
     nodeCount: document.nodeCount,
     maxDepth: document.maxDepth,
   };
@@ -111,6 +115,7 @@ export async function convertBuffer(
   buffer: Buffer | ArrayBuffer | Uint8Array,
   sourceFormat: SourceFormat,
   markdownStyle: MarkdownStyle = 'generic',
+  options: { sheet?: string | number } = {},
 ): Promise<{ markdown: string; document: MindMapDocument }> {
   let document: MindMapDocument;
 
@@ -121,6 +126,7 @@ export async function convertBuffer(
     document = parseLakeboardContent(bytes.toString('utf-8'));
   }
 
+  document = selectSheet(document, options.sheet);
   const markdown =
     markdownStyle === 'xmind' ? renderXmindMarkdown(document) : renderGenericMarkdown(document);
 

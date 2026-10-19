@@ -46,7 +46,7 @@ To deploy a preview build to `lakeboard-convert-preview.<subdomain>.workers.dev`
 
 ## For agents (MCP and `--json`)
 
-Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text). Requires Node 20.12+.
+Agents get one read-only tool, `convert(path, format, sheet?, maxNodes?, maxDepth?)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text). Requires Node 20.12+.
 
 Start the MCP server:
 
@@ -104,19 +104,46 @@ node dist/cli.js read ./test-fixtures/test.lakeboard --format json --json
 node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
 ```
 
-Every JSON result has `schemaVersion: 1`, `source`, `format`, `nodeCount`, `maxDepth` and `content`. Errors with `--json` print `{"error": "..."}` and exit 1. See [AGENTS.md](./AGENTS.md) for contributors.
+Every CLI read JSON result has `schemaVersion: 1`, `source`, `format`, `nodeCount`, `maxDepth` and `content`. Errors with `--json` print `{"error": "..."}` and exit 1. See [AGENTS.md](./AGENTS.md) for contributors.
+
+## Output and limits in 0.4.0
+
+All XMind sheets are included. A Lakeboard document has one sheet named after its root. Untitled XMind sheets use `Sheet N`. With multiple sheets, generic Markdown uses `# <sheet title>` followed by `## <root title>` and the topic list. A single sheet keeps `# <root title>`. First-level list items start at column 0; deeper items use two more spaces. Notes align with the item's content column. Linked topics use `[Title](url)` directly, including headings, with brackets in titles escaped. Generic Markdown labels follow the title as code spans, such as ``- Split vendor chunk `P1` `tech-debt` ``. Outlines use `- Title [P1, tech-debt]` and a sheet heading before each outline when there are several sheets.
+
+XMind-import Markdown uses one root list per sheet separated by a blank line, without headings. It omits labels so they do not become part of imported topic titles.
+
+Both CLI commands accept `--sheet <index|name>` (1-based index or exact case-insensitive title). MCP accepts `sheet` as a string or integer. Selection is recorded in `selectedSheet`; unknown selections list available sheets.
+
+```bash
+lakeboard-converter read /absolute/path/map.xmind --sheet Roadmap --max-nodes 5000 --max-depth 3 --json
+lakeboard-converter convert ./map.xmind --sheet 2 --format md
+```
+
+`readMindMap(file, format, options)` and CLI `read` / MCP default to `maxNodes: 2000`; valid values are integers from 1 to 50000. Optional `maxDepth` is a nonnegative integer. **The root is depth 0**, so a root with children only has `maxDepth: 1`. Limits prune topics in pre-order across sheets. `truncated` and `warnings` report omitted topics. Increase the limits or select a sheet to read more. File conversion has no size limit. CLI read without `--json` and MCP text append warnings as `> Note: ...`.
+
+Use absolute paths for MCP: relative paths resolve against the server's working directory, which may differ from your terminal's. CLI read and MCP expand leading `~` or `~/` using the home directory. Missing relative paths report the resolved path and server working directory.
+
+### JSON format and MCP results
+
+CLI `read --json` keeps `schemaVersion: 1` and the existing fields, adding `sheets: [{ index, title, nodeCount, maxDepth }]`, optional `selectedSheet: { index, title }`, `truncated`, and `warnings`. Counts describe the selected input before truncation; `maxDepth` always counts the root as depth 0.
+
+For `format: "json"`, `content` is a topic tree for one sheet. Starting in 0.4.0, multiple sheets produce `{ sheets: [{ index, title, root: AgentTopic }] }`. Limits apply to these trees as well as Markdown and outlines.
+
+MCP returns one plain text block containing Markdown, outline text, or pretty-printed JSON trees. It also returns `structuredContent` with `{ schemaVersion, file, source, format, nodeCount, maxDepth, sheets, selectedSheet?, truncated, warnings }`, validated against the tool's registered `outputSchema`. The text is no longer a JSON-stringified result envelope. Warnings are appended as a final `> Note: ...` line. Errors use `isError: true` with a clear message; the tool remains read-only.
+
+Cursor CLI in headless mode (`cursor-agent -p`) needs `--force` (plus `--approve-mcps`) or the tool call is rejected.
 
 ## How it works
 
 ```text
 .lakeboard ─┐                          ┌─ renderGenericMarkdown → # root + nested list
-            ├─ parse → MindMapDocument ─┼─ renderXmindMarkdown  → single-root list for XMind import
+            ├─ parse → MindMapDocument ─┼─ renderXmindMarkdown  → root list per sheet for XMind import
 .xmind ─────┘     (TopicNode tree)      └─ renderXmind          → minimal .xmind package
 ```
 
 The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam; agents use `readMindMap` in `src/agent.ts`, which never writes files.
 
-Keeps text, hierarchy, order, notes and links. XMind labels are kept in the JSON output (`--format json`, MCP `format: "json"`) but not yet in Markdown. Only the first sheet of an `.xmind` is read. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
+Keeps text, hierarchy, order, notes and links. All XMind sheets are read. Labels appear inline in generic Markdown and outlines. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
 
 ## Testing
 

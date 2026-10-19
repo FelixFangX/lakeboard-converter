@@ -16,18 +16,31 @@ export function createServer(): McpServer {
     {
       title: 'Read a mind map',
       description:
-        'Read a Yuque Lakeboard (.lakeboard) or XMind (.xmind) mind map from a local path. ' +
+        'Pass an absolute path. Read a Yuque Lakeboard (.lakeboard) or XMind (.xmind) mind map from a local path. ' +
+        'All sheets are included (each under its sheet title); pass sheet (1-based index or title) to read one. Large maps are cut at maxNodes (default 2000) and flagged as truncated. ' +
         'format "md" = nested Markdown list, "json" = topic tree, "outline" = compact indented text. Read-only.',
       inputSchema: {
-        path: z.string().describe('Absolute or working-directory-relative path to a .lakeboard or .xmind file'),
+        path: z.string().describe('Absolute path to a .lakeboard or .xmind file'),
+        sheet: z.union([z.string(), z.number().int().min(1)]).optional(),
+        maxNodes: z.number().int().min(1).max(50000).optional(),
+        maxDepth: z.number().int().min(0).optional(),
         format: z.enum(['md', 'json', 'outline']).default('md'),
+      },
+      outputSchema: {
+        schemaVersion: z.literal(1), file: z.string(), source: z.enum(['lakeboard', 'xmind']),
+        format: z.enum(['md', 'json', 'outline']), nodeCount: z.number().int(), maxDepth: z.number().int(),
+        sheets: z.array(z.object({ index: z.number().int(), title: z.string(), nodeCount: z.number().int(), maxDepth: z.number().int() })),
+        selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
+        truncated: z.boolean(), warnings: z.array(z.string()),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ path, format }) => {
+    async ({ path, format, ...options }) => {
       try {
-        const result = await readMindMap(path, format);
-        return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+        const result = await readMindMap(path, format, options);
+        const { content, ...structuredContent } = result;
+        const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+        return { content: [{ type: 'text', text: text + (result.warnings.length ? `\n> Note: ${result.warnings.join(' ')}` : '') }], structuredContent };
       } catch (error) {
         return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }] };
       }

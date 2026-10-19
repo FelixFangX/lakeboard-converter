@@ -23,12 +23,12 @@ describe('convertBuffer: .lakeboard → Markdown', () => {
     expect(markdown.trim()).toBe(
       [
         '# Lakeboard Test Root',
-        '  - Branch Alpha',
-        '    - Sub-item Alpha.1',
-        '    - Sub-item Alpha.2',
-        '  - Branch Beta',
-        '    - Sub-item Beta.1',
-        '  - Branch Gamma',
+        '- Branch Alpha',
+        '  - Sub-item Alpha.1',
+        '  - Sub-item Alpha.2',
+        '- Branch Beta',
+        '  - Sub-item Beta.1',
+        '- Branch Gamma',
       ].join('\n'),
     );
   });

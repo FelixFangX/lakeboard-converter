@@ -13,6 +13,9 @@ function toXmindTopic(node: TopicNode): XMindTopic {
   const topic: XMindTopic = {
     id: node.id,
     title: node.title,
+    ...(node.notes ? { notes: { plain: { content: node.notes } } } : {}),
+    ...(node.labels ? { labels: node.labels } : {}),
+    ...(node.href ? { href: node.href } : {}),
   };
 
   if (node.children.length > 0) {
@@ -28,14 +31,9 @@ export async function renderXmind(document: MindMapDocument): Promise<Buffer> {
   const zip = new JSZip();
   const now = new Date().toISOString();
 
-  const content = [
-    {
-      id: document.root.id,
-      class: 'sheet',
-      title: document.root.title,
-      rootTopic: toXmindTopic(document.root),
-    },
-  ];
+  const content = document.sheets.map(sheet => ({
+    id: sheet.root.id, class: 'sheet', title: sheet.title, rootTopic: toXmindTopic(sheet.root),
+  }));
 
   const metadata = {
     creator: { name: 'lakeboard-converter' },

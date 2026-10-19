@@ -8,7 +8,7 @@
 
 - 解析 `.lakeboard` 文件（语雀画板）
 - 解析 `.xmind` 文件（XMind Zen/2020+ 格式）
-- 保留节点层级、顺序、备注和链接；XMind 标签目前只在 JSON 输出（`--format json`）中保留，Markdown 暂不输出；`.xmind` 只读取第一个画布（sheet）
+- 保留节点层级、顺序、备注和链接；XMind 标签会显示在通用 Markdown 和大纲中；读取 `.xmind` 的所有画布（sheet）
 - 导出通用 Markdown
 - 导出适合 XMind 导入的 Markdown
 - 直接生成 `.xmind` 文件
@@ -219,3 +219,31 @@ npm run test         # 运行测试
 - 保留文本、层级和顺序，但不保留样式、颜色和布局信息
 - 不支持 XMind 8（旧版 XML 格式），仅支持 XMind Zen/2020+（JSON 格式）
 - 如果遇到新的 `.lakeboard` 结构变体，可能需要补充解析逻辑
+
+
+## 0.4.0 输出与限制
+
+读取 XMind 的所有画布。Lakeboard 只有一个画布，标题为根节点标题。无标题的 XMind 画布使用 `Sheet N`。多个画布的通用 Markdown 分别使用 `# <画布标题>`、`## <根节点标题>` 和列表；单个画布仍使用 `# <根节点标题>`。第一级列表不缩进，之后每级增加两个空格；备注与列表项的正文列对齐。链接直接放在节点文字上，例如 `[标题](url)`，标题中的方括号会转义。标签显示为行内代码，例如 ``- 拆分依赖包 `P1` `tech-debt` ``；大纲使用 `- 标题 [P1, tech-debt]`，多个画布各有一个标题。
+
+XMind 导入样式每个画布使用一个根列表，以空行分隔，不使用标题，也不输出标签，避免标签污染重新导入的节点标题。
+
+CLI 的 `read` 和 `convert` 都支持 `--sheet <index|name>`，按从 1 开始的序号或不区分大小写的完整标题选择画布。MCP 的 `sheet` 接受字符串或整数。选择结果记录在 `selectedSheet` 中；找不到时会列出可用画布。
+
+```bash
+lakeboard-converter read /absolute/path/map.xmind --sheet Roadmap --max-nodes 5000 --max-depth 3 --json
+lakeboard-converter convert ./map.xmind --sheet 2 --format md
+```
+
+`readMindMap(file, format, options)`、CLI `read` 和 MCP 默认使用 `maxNodes: 2000`，接受 1 到 50000 的整数。可选的 `maxDepth` 为非负整数。根节点深度为 0，因此只有根节点和一层子节点的文档 `maxDepth` 为 1。限制按画布顺序进行前序遍历截断；`truncated` 和 `warnings` 说明截断情况。可以提高限制或选择单个画布。写文件的 `convert` 不受大小限制。CLI 非封装输出与 MCP 文本会追加 `> Note: ...` 警告。
+
+MCP 请使用绝对路径。相对路径以服务器工作目录为基准，可能与终端目录不同。CLI `read` 和 MCP 支持将开头的 `~` 或 `~/` 展开为用户主目录。相对路径不存在时，错误会提供解析后的绝对路径和服务器工作目录。
+
+### JSON 格式与 MCP 结果
+
+CLI `read --json` 保留 `schemaVersion: 1` 和已有字段，新增 `sheets: [{ index, title, nodeCount, maxDepth }]`、可选的 `selectedSheet: { index, title }`、`truncated` 和 `warnings`。统计值描述截断前选中的输入；`maxDepth` 始终以根节点深度 0 计算。
+
+`format: "json"` 的 `content` 在单画布时仍为节点树。自 0.4.0 起，多画布时为 `{ sheets: [{ index, title, root: AgentTopic }] }`。节点树同样受输出限制影响。
+
+MCP 返回一个纯文本块，内容为 Markdown、大纲或格式化 JSON 节点树，不再把整个结果封装后序列化到文本中。同时返回 `structuredContent`：`{ schemaVersion, file, source, format, nodeCount, maxDepth, sheets, selectedSheet?, truncated, warnings }`，并注册对应的 `outputSchema`。警告追加到文本最后一行 `> Note: ...`。错误仍返回 `isError: true` 和明确说明，工具保持只读。
+
+Cursor CLI 的无界面模式（`cursor-agent -p`）需要 `--force`（以及 `--approve-mcps`），否则工具调用会被拒绝。

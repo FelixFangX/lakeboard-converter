@@ -61,7 +61,7 @@ describe('MCP server: convert tool', () => {
     const res = await client.callTool({ name: 'convert', arguments: { path: fixture('test.lakeboard'), format: 'json' } });
     const text = (res.content as { type: string; text: string }[])[0].text;
     const body = JSON.parse(text);
-    expect(body.content.title).toBe('Lakeboard Test Root');
+    expect(body.title).toBe('Lakeboard Test Root');
     expect(res.isError).toBeFalsy();
   });
 
