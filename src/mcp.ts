@@ -1,11 +1,16 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { readMindMap } from './agent.js';
 
+const { version } = createRequire(import.meta.url)('../package.json');
+
 export function createServer(): McpServer {
-  const server = new McpServer({ name: 'lakeboard-converter', version: '0.3.0' });
+  const server = new McpServer({ name: 'lakeboard-converter', version });
   server.registerTool(
     'convert',
     {
@@ -31,8 +36,16 @@ export function createServer(): McpServer {
   return server;
 }
 
-const isMain = process.argv[1] && /mcp\.(js|ts)$/.test(process.argv[1]);
-if (isMain) {
+export function isEntrypoint(argv1: string | undefined, moduleUrl: string): boolean {
+  if (!argv1) return false;
+  try {
+    return realpathSync(argv1) === fileURLToPath(moduleUrl);
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint(process.argv[1], import.meta.url)) {
   createServer()
     .connect(new StdioServerTransport())
     .catch((error) => {

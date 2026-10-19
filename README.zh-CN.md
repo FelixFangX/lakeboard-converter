@@ -2,7 +2,7 @@
 
 [English](./README.md) | 简体中文
 
-一个将语雀画板 `.lakeboard` 和 XMind `.xmind` 思维导图转换为 Markdown 的命令行 & Web 工具。
+一个将语雀画板 `.lakeboard` 和 XMind `.xmind` 思维导图转换为 Markdown 的命令行、MCP 服务和 Web 工具（[convert.ledring.dev](https://convert.ledring.dev)）。
 
 ## 功能特性
 
@@ -17,7 +17,7 @@
 
 ## 环境要求
 
-- Node.js 18+
+- Node.js 20.12+
 
 ## 安装
 
@@ -92,6 +92,68 @@ Web 界面文字为英文（标题 `Mind map → Markdown`），提供：
 - 切换 `Generic Markdown` / `XMind import style` 两种 Markdown 风格
 - Markdown 源码视图和树形结构预览（`Tree preview`），并显示 `Nodes` / `Depth` 统计
 - 一键复制（`Copy` → `Copied`）和下载 `.md` 文件（`Download .md`）
+
+## 面向代理（MCP 和 `--json`）
+
+代理可使用一个只读工具 `convert(path, format)`，其中 `format` 为 `md`、`json`（主题树）或 `outline`（紧凑缩进文本）。需要 Node 20.12+。
+
+启动 MCP 服务器：
+
+```bash
+npx -y lakeboard-converter mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lakeboard-converter": {
+      "command": "npx",
+      "args": ["-y", "lakeboard-converter", "mcp"]
+    }
+  }
+}
+```
+
+Cursor（`.cursor/mcp.json` 或 `~/.cursor/mcp.json`）：
+
+```json
+{
+  "mcpServers": {
+    "lakeboard-converter": {
+      "command": "npx",
+      "args": ["-y", "lakeboard-converter", "mcp"]
+    }
+  }
+}
+```
+
+Codex CLI (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.lakeboard-converter]
+command = "npx"
+args = ["-y", "lakeboard-converter", "mcp"]
+```
+
+通过 CLI 读取文件，或全局安装 CLI：
+
+```bash
+npx -y lakeboard-converter read ./map.xmind --format md
+npm i -g lakeboard-converter
+```
+
+### 从源码运行
+
+```bash
+npm run build
+node /abs/path/lakeboard-converter/dist/cli.js mcp
+node dist/cli.js read ./test-fixtures/test.lakeboard --format json --json
+node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
+```
+
+每个 JSON 结果包含 `schemaVersion: 1`、`source`、`format`、`nodeCount`、`maxDepth` 和 `content`。使用 `--json` 时，错误输出为 `{"error": "..."}`，退出码为 1。贡献指南见 [AGENTS.md](./AGENTS.md)。
 
 ## CLI 参数（非交互式模式）
 

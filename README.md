@@ -3,7 +3,7 @@
   <img alt="lakeboard-converter — Mind maps to Markdown your agents can read." src="./docs/assets/header-light.svg" width="100%">
 </picture>
 
-**Convert Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mind maps into Markdown or a fresh `.xmind`.** Comes as a CLI, a guided TUI and a drag-and-drop web UI. English | [简体中文](./README.zh-CN.md)
+**Convert Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mind maps into Markdown or a fresh `.xmind`.** Comes as a CLI, a guided TUI, an MCP server and a drag-and-drop web UI ([convert.ledring.dev](https://convert.ledring.dev)). English | [简体中文](./README.zh-CN.md)
 
 ## Quickstart
 
@@ -13,7 +13,7 @@ cd lakeboard-converter && npm ci
 npm run convert -- ./test-fixtures/test.lakeboard --format md --out-dir ./out
 ```
 
-Requires Node 18+.
+Requires Node 20.12+.
 
 ## Usage
 
@@ -46,13 +46,61 @@ To deploy a preview build to `lakeboard-convert-preview.<subdomain>.workers.dev`
 
 ## For agents (MCP and `--json`)
 
-Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text).
+Agents get one read-only tool, `convert(path, format)`, where `format` is `md`, `json` (topic tree) or `outline` (compact indented text). Requires Node 20.12+.
+
+Start the MCP server:
+
+```bash
+npx -y lakeboard-converter mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lakeboard-converter": {
+      "command": "npx",
+      "args": ["-y", "lakeboard-converter", "mcp"]
+    }
+  }
+}
+```
+
+Cursor (`.cursor/mcp.json` or `~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "lakeboard-converter": {
+      "command": "npx",
+      "args": ["-y", "lakeboard-converter", "mcp"]
+    }
+  }
+}
+```
+
+Codex CLI (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.lakeboard-converter]
+command = "npx"
+args = ["-y", "lakeboard-converter", "mcp"]
+```
+
+Read a file from the CLI, or install the CLI globally:
+
+```bash
+npx -y lakeboard-converter read ./map.xmind --format md
+npm i -g lakeboard-converter
+```
+
+### From source
 
 ```bash
 npm run build
-# MCP client config (Claude Desktop, Cursor, ...):
-#   { "command": "node", "args": ["/abs/path/lakeboard-converter/dist/cli.js", "mcp"] }
-node dist/cli.js read ./test-fixtures/test.lakeboard --format json --json   # same result on stdout
+node /abs/path/lakeboard-converter/dist/cli.js mcp
+node dist/cli.js read ./test-fixtures/test.lakeboard --format json --json
 node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
 ```
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { convertFile } from './index.js';
 import { readMindMap, type AgentFormat } from './agent.js';
 
+const { version } = createRequire(import.meta.url)('../package.json');
 const program = new Command();
 
 program
   .name('lakeboard-converter')
   .description('Convert .lakeboard / .xmind mind maps to Markdown or XMind')
-  .version('0.3.0');
+  .version(version);
 
 program
   .command('convert')
