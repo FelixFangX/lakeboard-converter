@@ -7,13 +7,33 @@
 
 ## Quickstart
 
+Open [convert.ledring.dev](https://convert.ledring.dev) to convert a file in your browser.
+
+Or use the CLI without installing it globally (requires Node 20.12+):
+
+```bash
+npx -y lakeboard-converter convert ./map.xmind --format md --out-dir ./out
+```
+
+Read Markdown to stdout without writing files:
+
+```bash
+npx -y lakeboard-converter read ./map.xmind --format md
+```
+
+Start the read-only MCP server:
+
+```bash
+npx -y lakeboard-converter mcp
+```
+
+### Development
+
 ```bash
 git clone https://github.com/FelixFangX/lakeboard-converter.git
 cd lakeboard-converter && npm ci
 npm run convert -- ./test-fixtures/test.lakeboard --format md --out-dir ./out
 ```
-
-Requires Node 20.12+.
 
 ## Usage
 
@@ -141,7 +161,7 @@ Cursor CLI in headless mode (`cursor-agent -p`) needs `--force` (plus `--approve
 .xmind ─────┘     (TopicNode tree)      └─ renderXmind          → minimal .xmind package
 ```
 
-The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam; agents use `readMindMap` in `src/agent.ts`, which never writes files.
+The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI and TUI use that seam. The web UI uses its browser converter with shared fallback ID allocation; agents use `readMindMap` in `src/agent.ts`, which never writes files.
 
 Keeps text, hierarchy, order, notes and links. All XMind sheets are read. Labels appear inline in generic Markdown and outlines. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
 

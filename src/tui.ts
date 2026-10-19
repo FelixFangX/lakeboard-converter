@@ -1,8 +1,11 @@
+import { createRequire } from 'node:module';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { select, input, confirm, search, Separator } from '@inquirer/prompts';
 import { convertFile } from './index.js';
 import type { MarkdownStyle } from './core/types.js';
+
+const { version } = createRequire(import.meta.url)('../package.json');
 
 const SUPPORTED_EXTENSIONS = ['.lakeboard', '.xmind'];
 
@@ -79,11 +82,15 @@ async function scanForFiles(
 // ─── Banner ───
 
 function printBanner(): void {
+  const title = `   🗺  MindMap Converter  v${version}`;
+  const subtitle = '   .lakeboard / .xmind → Markdown';
+  // The map glyph occupies two terminal columns (and two UTF-16 code units).
+  const width = Math.max(42, title.length + 3, subtitle.length + 3);
   console.log();
-  console.log(bold('  ╔══════════════════════════════════════════╗'));
-  console.log(bold('  ║') + cyan('   🗺  MindMap Converter  v0.2.0          ') + bold('║'));
-  console.log(bold('  ║') + dim('   .lakeboard / .xmind → Markdown        ') + bold('║'));
-  console.log(bold('  ╚══════════════════════════════════════════╝'));
+  console.log(bold(`  ╔${'═'.repeat(width)}╗`));
+  console.log(bold('  ║') + cyan(title.padEnd(width)) + bold('║'));
+  console.log(bold('  ║') + dim(subtitle.padEnd(width)) + bold('║'));
+  console.log(bold(`  ╚${'═'.repeat(width)}╝`));
   console.log();
 }
 

@@ -1,3 +1,4 @@
+import { createFallbackIds } from './fallback-ids.js';
 import { readFile } from 'node:fs/promises';
 import JSZip from 'jszip';
 import { normalizeTree } from './normalize.js';
@@ -23,13 +24,13 @@ interface XMindSheet {
   rootTopic?: XMindTopic;
 }
 
-function convertXMindTopic(topic: XMindTopic, order: number): TopicNode {
+function convertXMindTopic(topic: XMindTopic, order: number, path: string, fallbackId: (base: string) => string): TopicNode {
   const children = topic.children?.attached ?? [];
   return {
-    id: topic.id ?? `xmind-node-${order}`,
+    id: topic.id ?? fallbackId(`xmind-node-${path}`),
     title: topic.title ?? '(untitled)',
     order,
-    children: children.map((child, index) => convertXMindTopic(child, index)),
+    children: children.map((child, index) => convertXMindTopic(child, index, `${path}.${index}`, fallbackId)),
     notes: topic.notes?.plain?.content,
     labels: topic.labels,
     href: topic.href,
@@ -69,9 +70,10 @@ export async function parseXmindBuffer(
     throw new Error('No sheets found in the .xmind file');
   }
 
+  const fallbackId = createFallbackIds(sheets.flatMap(sheet => sheet.rootTopic ? [sheet.rootTopic] : []), topic => topic.children?.attached ?? []);
   const parsedSheets = sheets.map((sheet, offset) => {
     if (!sheet.rootTopic) throw new Error(`Sheet ${offset + 1} in the .xmind file has no rootTopic`);
-    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
+    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0, `${offset}-0`, fallbackId));
     return { index: offset + 1, title: sheet.title?.trim() || `Sheet ${offset + 1}`, root, ...validateTree(root) };
   });
   return {
