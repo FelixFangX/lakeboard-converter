@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here, following Keep a Changelog.
 
+## [0.4.1] - 2026-10-19
+
+### Fixed
+
+- Topics without an ID no longer get duplicate fallback IDs across branches, which made the tree validator reject the file. Fallback IDs are now path-based, skip IDs already used in the file, and are shared by the CLI, MCP server and web app. Only fallback IDs of ID-less topics in JSON output change.
+- The TUI banner shows the installed package version instead of v0.2.0.
+
+### Changed
+
+- README quickstarts start with the web app and `npx` before cloning the repo.
+
 ## [0.4.0] - 2026-10-19
 
 ### Added

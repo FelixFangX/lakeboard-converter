@@ -6,12 +6,12 @@
     "url": "https://github.com/FelixFangX/lakeboard-converter",
     "source": "github"
   },
-  "version": "0.4.0",
+  "version": "0.4.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "lakeboard-converter",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
