@@ -1,3 +1,4 @@
+import { createFallbackIds } from './fallback-ids.js';
 import { readFile } from 'node:fs/promises';
 import { normalizeTree } from './normalize.js';
 import type { MindMapDocument, TopicNode } from './types.js';
@@ -18,13 +19,13 @@ interface RawLakeboardFile {
   };
 }
 
-function convertNode(node: RawNode, order: number): TopicNode {
+function convertNode(node: RawNode, order: number, path: string, fallbackId: (base: string) => string): TopicNode {
   return {
-    id: node.id ?? `node-${order}`,
+    id: node.id ?? fallbackId(`node-${path}`),
     title: normalizeInlineText(node.html ?? '') || '(untitled)',
     order,
     rawHtml: node.html,
-    children: (node.children ?? []).map((child, index) => convertNode(child, index)),
+    children: (node.children ?? []).map((child, index) => convertNode(child, index, `${path}.${index}`, fallbackId)),
   };
 }
 
@@ -43,7 +44,8 @@ function parseLakeboardData(data: RawLakeboardFile, sourcePath?: string): MindMa
     throw new Error('No convertible mindmap root node found');
   }
 
-  const root = normalizeTree(convertNode(rootRaw, 0));
+  const fallbackId = createFallbackIds(body, node => node.children ?? []);
+  const root = normalizeTree(convertNode(rootRaw, 0, '0', fallbackId));
   const { nodeCount, maxDepth } = validateTree(root);
 
   return {

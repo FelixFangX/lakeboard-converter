@@ -1,3 +1,4 @@
+import { createFallbackIds } from '../../src/core/fallback-ids.js';
 import JSZip from 'jszip';
 
 export interface TopicNode {
@@ -105,13 +106,13 @@ interface RawLakeboardFile {
   };
 }
 
-function convertLakeboardNode(node: RawLakeboardNode, order: number): TopicNode {
+function convertLakeboardNode(node: RawLakeboardNode, order: number, path: string, fallbackId: (base: string) => string): TopicNode {
   return {
-    id: node.id ?? `node-${order}`,
+    id: node.id ?? fallbackId(`node-${path}`),
     title: normalizeInlineText(node.html ?? '') || '(untitled)',
     order,
     children: (node.children ?? []).map((child, index) =>
-      convertLakeboardNode(child, index),
+      convertLakeboardNode(child, index, `${path}.${index}`, fallbackId),
     ),
   };
 }
@@ -138,7 +139,8 @@ function parseLakeboardContent(content: string): MindMapDocument {
     throw new Error('No convertible mindmap root node found');
   }
 
-  const root = normalizeTree(convertLakeboardNode(rootRaw, 0));
+  const fallbackId = createFallbackIds(body, node => node.children ?? []);
+  const root = normalizeTree(convertLakeboardNode(rootRaw, 0, '0', fallbackId));
   const { nodeCount, maxDepth } = validateTree(root);
 
   return { format: 'lakeboard', root, nodeCount, maxDepth, sheets: [{ index: 1, title: root.title, root, nodeCount, maxDepth }] };
@@ -165,13 +167,13 @@ interface XMindSheet {
   rootTopic?: XMindTopic;
 }
 
-function convertXMindTopic(topic: XMindTopic, order: number): TopicNode {
+function convertXMindTopic(topic: XMindTopic, order: number, path: string, fallbackId: (base: string) => string): TopicNode {
   const children = topic.children?.attached ?? [];
   return {
-    id: topic.id ?? `xmind-node-${order}`,
+    id: topic.id ?? fallbackId(`xmind-node-${path}`),
     title: topic.title ?? '(untitled)',
     order,
-    children: children.map((child, index) => convertXMindTopic(child, index)),
+    children: children.map((child, index) => convertXMindTopic(child, index, `${path}.${index}`, fallbackId)),
     notes: topic.notes?.plain?.content,
     labels: topic.labels,
     href: topic.href,
@@ -207,9 +209,10 @@ async function parseXmindBuffer(buffer: ArrayBuffer): Promise<MindMapDocument> {
     throw new Error('No sheets found in the .xmind file');
   }
 
+  const fallbackId = createFallbackIds(sheets.flatMap(sheet => sheet.rootTopic ? [sheet.rootTopic] : []), topic => topic.children?.attached ?? []);
   const parsedSheets = sheets.map((sheet, offset) => {
     if (!sheet.rootTopic) throw new Error(`Sheet ${offset + 1} in the .xmind file has no rootTopic`);
-    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0));
+    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0, `${offset}-0`, fallbackId));
     return { index: offset + 1, title: sheet.title?.trim() || `Sheet ${offset + 1}`, root, ...validateTree(root) };
   });
   return {

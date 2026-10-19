@@ -19,15 +19,37 @@
 
 - Node.js 20.12+
 
-## 安装
+## 快速使用
+
+打开 [convert.ledring.dev](https://convert.ledring.dev)，在浏览器中转换文件。点击右上角「中文」切换语言，或直接使用 [中文界面](https://convert.ledring.dev/?lang=zh)。
+
+也可以无需全局安装，直接运行 CLI（需要 Node.js 20.12+）：
+
+```bash
+npx -y lakeboard-converter convert ./map.xmind --format md --out-dir ./out
+```
+
+将 Markdown 输出到终端，不写入文件：
+
+```bash
+npx -y lakeboard-converter read ./map.xmind --format md
+```
+
+启动只读 MCP 服务器：
+
+```bash
+npx -y lakeboard-converter mcp
+```
+
+### 本地开发
 
 ```bash
 git clone https://github.com/FelixFangX/lakeboard-converter.git
 cd lakeboard-converter
-npm install
+npm ci
 ```
 
-## 快速使用
+以下命令在本地源码目录中运行。
 
 ### 交互式 TUI 模式（推荐）
 
@@ -86,7 +108,7 @@ npm run dev:web
 npm run build:web
 ```
 
-Web 界面文字为英文（标题 `Mind map → Markdown`），提供：
+Web 界面支持中文和英文，以下以英文界面文字为例，提供：
 - 拖拽上传 `.lakeboard` 和 `.xmind` 文件（`Drop a file here, or click to choose one`）
 - 实时转换为 Markdown（转换中显示 `Converting…`）
 - 切换 `Generic Markdown` / `XMind import style` 两种 Markdown 风格
