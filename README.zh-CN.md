@@ -8,7 +8,7 @@
 
 - 解析 `.lakeboard` 文件（语雀画板）
 - 解析 `.xmind` 文件（XMind Zen/2020+ 格式）
-- 保留节点层级、顺序、备注、标签和链接
+- 保留节点层级、顺序、备注和链接；XMind 标签目前只在 JSON 输出（`--format json`）中保留，Markdown 暂不输出；`.xmind` 只读取第一个画布（sheet）
 - 导出通用 Markdown
 - 导出适合 XMind 导入的 Markdown
 - 直接生成 `.xmind` 文件

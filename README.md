@@ -116,7 +116,7 @@ Every JSON result has `schemaVersion: 1`, `source`, `format`, `nodeCount`, `maxD
 
 The **seam** is `convertBuffer` / `convertFile` in `src/index.ts`. Every input format parses into one `MindMapDocument`, so a new format needs one parser and no renderer changes. The CLI, TUI and web UI are thin adapters over that seam; agents use `readMindMap` in `src/agent.ts`, which never writes files.
 
-Keeps text, hierarchy, order, notes, labels and links. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
+Keeps text, hierarchy, order, notes and links. XMind labels are kept in the JSON output (`--format json`, MCP `format: "json"`) but not yet in Markdown. Only the first sheet of an `.xmind` is read. Drops styling, colour and layout. XMind 8 (legacy XML) isn't supported.
 
 ## Testing
 
