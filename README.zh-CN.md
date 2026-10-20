@@ -258,7 +258,7 @@ lakeboard-converter convert ./map.xmind --sheet 2 --format md
 
 `readMindMap(file, format, options)`、CLI `read` 和 MCP 默认使用 `maxNodes: 2000`，接受 1 到 50000 的整数。可选的 `maxDepth` 为非负整数。根节点深度为 0，因此只有根节点和一层子节点的文档 `maxDepth` 为 1。限制按画布顺序进行前序遍历截断；`truncated` 和 `warnings` 说明截断情况。可以提高限制或选择单个画布。写文件的 `convert` 不受大小限制。CLI 非封装输出与 MCP 文本会追加 `> Note: ...` 警告。
 
-MCP 请使用绝对路径。相对路径以服务器工作目录为基准，可能与终端目录不同。CLI `read` 和 MCP 支持将开头的 `~` 或 `~/` 展开为用户主目录。相对路径不存在时，错误会提供解析后的绝对路径和服务器工作目录。
+MCP 请使用绝对路径。相对路径以服务器工作目录为基准，可能与终端目录不同。CLI `read` 和 MCP 支持将开头的 `~` 或 `~/`（Windows 上还支持 `~\`）展开为用户主目录。相对路径不存在时，错误会提供解析后的绝对路径和服务器工作目录。
 
 ### JSON 格式与 MCP 结果
 

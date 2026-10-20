@@ -29,7 +29,7 @@ convert({ "path": "/absolute/path/to/map.xmind", "format": "md" })
 
 The tool is read-only. Arguments:
 
-- `path` (required): absolute path to a `.xmind` (XMind Zen / 2020+) or `.lakeboard` file. A leading `~` is expanded. Relative paths resolve against the server's working directory, so prefer absolute paths.
+- `path` (required): absolute path to a `.xmind` (XMind Zen / 2020+) or `.lakeboard` file. A leading `~` or `~/` (also `~\` on Windows) is expanded. Relative paths resolve against the server's working directory, so prefer absolute paths.
 - `format`: `md` (default), `json` or `outline`.
 - `sheet`: 1-based index or title of one XMind sheet. All sheets are returned by default.
 - `maxNodes` (default 2000, max 50000) and `maxDepth` (root is depth 0). Output past the limit is cut and flagged as `truncated`.

@@ -141,7 +141,7 @@ lakeboard-converter convert ./map.xmind --sheet 2 --format md
 
 `readMindMap(file, format, options)` and CLI `read` / MCP default to `maxNodes: 2000`; valid values are integers from 1 to 50000. Optional `maxDepth` is a nonnegative integer. **The root is depth 0**, so a root with children only has `maxDepth: 1`. Limits prune topics in pre-order across sheets. `truncated` and `warnings` report omitted topics. Increase the limits or select a sheet to read more. File conversion has no size limit. CLI read without `--json` and MCP text append warnings as `> Note: ...`.
 
-Use absolute paths for MCP: relative paths resolve against the server's working directory, which may differ from your terminal's. CLI read and MCP expand leading `~` or `~/` using the home directory. Missing relative paths report the resolved path and server working directory.
+Use absolute paths for MCP: relative paths resolve against the server's working directory, which may differ from your terminal's. CLI read and MCP expand leading `~` or `~/` (also `~\` on Windows) using the home directory. Missing relative paths report the resolved path and server working directory.
 
 ### JSON format and MCP results
 

@@ -74,7 +74,7 @@ describe('MCP server: convert tool', () => {
 
 describe('CLI --json', () => {
   it('read prints one JSON document', async () => {
-    const { stdout } = await run('npx', ['tsx', 'src/cli.ts', 'read', fixture('test.lakeboard'), '--format', 'outline', '--json']);
+    const { stdout } = await run(process.execPath, ['--import', 'tsx', 'src/cli.ts', 'read', fixture('test.lakeboard'), '--format', 'outline', '--json']);
     const body = JSON.parse(stdout);
     expect(body.format).toBe('outline');
     expect(body.content).toContain('Branch Alpha');
@@ -84,7 +84,7 @@ describe('CLI --json', () => {
 describe('CLI mcp subcommand', () => {
   it('answers an MCP initialize over stdio', async () => {
     const { spawn } = await import('node:child_process');
-    const child = spawn('npx', ['tsx', 'src/cli.ts', 'mcp']);
+    const child = spawn(process.execPath, ['--import', 'tsx', 'src/cli.ts', 'mcp']);
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 't', version: '1' } } }) + '\n');
     const line: string = await new Promise((resolve) => child.stdout.once('data', (d) => resolve(String(d))));
     child.kill();
