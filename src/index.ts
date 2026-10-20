@@ -12,8 +12,8 @@ export { parseLakeboardFile } from './core/parse-lakeboard.js';
 export { parseXmindFile, parseXmindBuffer } from './core/parse-xmind.js';
 export { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 export { renderXmind } from './render/xmind.js';
-export { readMindMap, AGENT_FORMATS } from './agent.js';
-export type { AgentFormat, AgentReadResult, AgentTopic, ReadOptions } from './agent.js';
+export { readMindMap, readMindMaps, inspectMindMap, AGENT_FORMATS } from './agent.js';
+export type { AgentFormat, AgentReadResult, AgentTopic, ReadOptions, AgentInspectResult, AgentBatchReadResult, BatchReadOptions } from './agent.js';
 
 export interface ConvertResult {
   selectedSheet?: { index: number; title: string };
@@ -132,3 +132,7 @@ export async function convertBuffer(
 
   return { markdown, document };
 }
+
+export { buildMindMap } from './agent.js';
+export type { BuildOptions, AgentBuildResult } from './agent.js';
+export { parseMarkdownOutline } from './core/parse-markdown.js';

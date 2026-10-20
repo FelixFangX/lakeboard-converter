@@ -27,12 +27,21 @@ Ask the agent to call the `convert` tool on any `.xmind` or `.lakeboard` file wi
 convert({ "path": "/absolute/path/to/map.xmind", "format": "md" })
 ```
 
-The tool is read-only. Arguments:
+`convert` is read-only. Arguments:
 
 - `path` (required): absolute path to a `.xmind` (XMind Zen / 2020+) or `.lakeboard` file. A leading `~` or `~/` (also `~\` on Windows) is expanded. Relative paths resolve against the server's working directory, so prefer absolute paths.
 - `format`: `md` (default), `json` or `outline`.
 - `sheet`: 1-based index or title of one XMind sheet. All sheets are returned by default.
 - `maxNodes` (default 2000, max 50000) and `maxDepth` (root is depth 0). Output past the limit is cut and flagged as `truncated`.
+
+## Tools
+
+- `convert(path, format?, sheet?, maxNodes?, maxDepth?)`: read one mind map; `format` defaults to `md`.
+- `from_markdown(markdown, output?, overwrite?, title?, maxNodes?)`: build XMind from Markdown. Write only to an explicit absolute `.xmind` path in an existing folder, with `overwrite: true` required to replace a file. Without `output`, return `structuredContent.base64`. Input is capped at 2 MB; `maxNodes` defaults to 2000 (max 50000).
+- `convert_many(paths, format?, sheet?, maxNodes?, maxTotalNodes?, maxDepth?)`: read 1–50 absolute paths with per-file results and errors. `maxTotalNodes` defaults to 10000; `structuredContent` contains metadata without content. Per-file errors do not fail the call.
+- `inspect(path, sheet?)`: return bytes and topic counts without content; pass an absolute path.
+
+`convert`, `convert_many` and `inspect` are read-only. `from_markdown` is the only writer and writes only where told; it does not create folders.
 
 ## Troubleshooting
 
