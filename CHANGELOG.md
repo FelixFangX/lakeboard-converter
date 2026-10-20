@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here, following Keep a Changelog.
 
+## [0.5.0] - 2026-10-20
+
+### Added
+
+- Build XMind from Markdown with the `from_markdown` tool and `build` CLI. Write to an explicit absolute `.xmind` path, never overwrite without the flag, or return base64 when no path is supplied to the tool.
+- Read batches with `convert_many` and multi-file CLI `read`, with per-file results and errors and a total node budget.
+- Check counts and file size without content with the `inspect` tool and CLI.
+
+### Fixed
+
+- Expand `~\` home paths on Windows (PR #25).
+
+### Changed
+
+- The MCP server is no longer purely read-only. `from_markdown` is the only tool that writes, and only to the path you pass.
+
 ## [0.4.1] - 2026-10-19
 
 ### Fixed

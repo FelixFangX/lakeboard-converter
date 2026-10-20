@@ -49,10 +49,10 @@ describe('MCP server: convert tool', () => {
     return client;
   }
 
-  it('lists a single read-only convert tool', async () => {
+  it('keeps convert read-only alongside from_markdown', async () => {
     const client = await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toEqual(['convert']);
+    expect(tools.map((t) => t.name)).toEqual(['convert', 'convert_many', 'inspect', 'from_markdown']);
     expect(tools[0].annotations?.readOnlyHint).toBe(true);
   });
 
