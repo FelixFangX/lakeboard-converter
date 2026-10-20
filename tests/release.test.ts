@@ -97,6 +97,23 @@ describe('0.4.0 output', () => {
     await expect(readMindMap('missing.xmind', 'md')).rejects.toThrow(`File not found: missing.xmind (resolved to ${path.resolve('missing.xmind')}). Relative paths resolve against the server's working directory ${process.cwd()}; pass an absolute path.`);
   });
 
+  it.runIf(process.platform === 'win32')('expands Windows home paths and resolves missing paths', async () => {
+    const spy = vi.spyOn(os, 'homedir').mockReturnValue(dir);
+    try {
+      expect((await readMindMap('~\\multi.xmind', 'md')).file).toBe(file);
+      await expect(readMindMap('~\\missing.xmind', 'md')).rejects.toThrow(`File not found: ~\\missing.xmind (resolved to ${path.join(dir, 'missing.xmind')})`);
+    }
+    finally { spy.mockRestore(); }
+  });
+
+  it.skipIf(process.platform === 'win32')('keeps backslashes literal in home-like paths on POSIX', async () => {
+    const spy = vi.spyOn(os, 'homedir').mockReturnValue(dir);
+    try {
+      await expect(readMindMap('~\\multi.xmind', 'md')).rejects.toThrow(`File not found: ~\\multi.xmind (resolved to ${path.resolve('~\\multi.xmind')}). Relative paths resolve against the server's working directory ${process.cwd()}; pass an absolute path.`);
+    }
+    finally { spy.mockRestore(); }
+  });
+
   it('uses fallback sheet titles', async () => {
     const zip = new JSZip();
     zip.file('content.json', JSON.stringify([{ rootTopic: { title: 'Root' } }, { title: '', rootTopic: { title: 'Other' } }]));

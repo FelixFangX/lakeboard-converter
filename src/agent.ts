@@ -58,7 +58,7 @@ export async function readMindMap(file: string, format: AgentFormat, options: Re
   const maxNodes = options.maxNodes ?? 2000;
   if (!Number.isInteger(maxNodes) || maxNodes < 1 || maxNodes > 50000) throw new Error('maxNodes must be an integer from 1 to 50000');
   if (options.maxDepth !== undefined && (!Number.isInteger(options.maxDepth) || options.maxDepth < 0)) throw new Error('maxDepth must be an integer >= 0');
-  const expanded = file === '~' ? os.homedir() : file.startsWith('~/') ? path.join(os.homedir(), file.slice(2)) : file;
+  const expanded = file === '~' ? os.homedir() : (file.startsWith('~/') || (path.sep === '\\' && file.startsWith('~\\'))) ? path.join(os.homedir(), file.slice(2)) : file;
   const resolved = path.resolve(expanded);
   try { await stat(resolved); } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
