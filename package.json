@@ -2,7 +2,7 @@
   "name": "lakeboard-converter",
   "version": "0.5.0",
   "mcpName": "io.github.FelixFangX/lakeboard-converter",
-  "description": "CLI & Web tool to convert Yuque Lakeboard (.lakeboard) and XMind (.xmind) files into Markdown",
+  "description": "Mind maps your agents can actually read — Lakeboard/XMind → Markdown.",
   "type": "module",
   "bin": {
     "lakeboard-converter": "./dist/cli.js",
