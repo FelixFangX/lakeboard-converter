@@ -1,24 +1,25 @@
 # lakeboard-converter
 
-Yuque Lakeboard (`.lakeboard`) and XMind (`.xmind`) mind maps are not text. This converts them to Markdown.
+Mind maps your agents can actually read — Lakeboard/XMind → Markdown.
 
-[convert.ledring.dev](https://convert.ledring.dev) runs in the browser. The file is not uploaded.
+[![npm](https://img.shields.io/npm/v/lakeboard-converter)](https://www.npmjs.com/package/lakeboard-converter)
+[![license](https://img.shields.io/github/license/FelixFangX/lakeboard-converter)](./LICENSE)
+
+[**convert.ledring.dev**](https://convert.ledring.dev)
+
+Runs in the browser. The file is not uploaded.
 
 ```bash
-npx -y lakeboard-converter convert ./map.xmind --format md --out-dir ./out
+npx -y lakeboard-converter
 ```
 
-Node.js 20.12 or newer. The npm package is `lakeboard-converter` 0.5.0.
-
-```bash
-npx -y lakeboard-converter mcp
-```
+MCP: `npx -y lakeboard-converter mcp`
 
 English | [简体中文](./README.zh-CN.md)
 
 ## Usage
 
-`convert` does not replace an existing file unless you pass `--overwrite`. `--format` is `md`, `xmind`, or `both` (default `both`). `--markdown-style` is `generic` (default) or `xmind`. XMind 8 XML is not supported.
+Requires Node.js 20.12 or newer. `convert` does not replace an existing file unless you pass `--overwrite`. `--format` is `md`, `xmind`, or `both` (default `both`). `--markdown-style` is `generic` (default) or `xmind`. XMind 8 XML is not supported.
 
 ```bash
 npm install -g lakeboard-converter
