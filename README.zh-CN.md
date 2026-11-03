@@ -2,13 +2,12 @@
 
 [English](./README.md) | 简体中文
 
-一个将语雀画板 `.lakeboard` 和 XMind `.xmind` 思维导图转换为 Markdown 的命令行、MCP 服务和 Web 工具（[convert.ledring.dev](https://convert.ledring.dev)）。
+把思维导图转成人和智能体能读的 Markdown。支持 OPML (`.opml`)、FreeMind / Freeplane (`.mm`)、Markdown 大纲 (`.md`)、语雀画板 (`.lakeboard`)、XMind Zen 与 XMind 8 (`.xmind`)、MindManager (`.mmap`)、iThoughts (`.itmz`)、SimpleMind (`.smmx`) 和 CSV 大纲 (`.csv`)。浏览器工具：[convert.ledring.dev](https://convert.ledring.dev)。包名仍是 `lakeboard-converter`。
 
 ## 功能特性
 
-- 解析 `.lakeboard` 文件（语雀画板）
-- 解析 `.xmind` 文件（XMind Zen/2020+ 格式）
-- 保留节点层级、顺序、备注和链接；XMind 标签会显示在通用 Markdown 和大纲中；读取 `.xmind` 的所有画布（sheet）
+- 解析 `.opml`、`.mm`（FreeMind / Freeplane）、`.md`、`.lakeboard`、`.xmind`（XMind Zen 与 XMind 8）、`.mmap`（MindManager）、`.itmz`（iThoughts）、`.smmx`（SimpleMind）和 `.csv`（一行一个主题的大纲）
+- 保留节点层级、顺序、备注和链接；标签会显示在通用 Markdown 和大纲中；读取 `.xmind` 的所有画布（sheet）
 - 导出通用 Markdown
 - 导出适合 XMind 导入的 Markdown
 - 直接生成 `.xmind` 文件
@@ -93,10 +92,10 @@ Wrote: /path/to/example.md
 
 | 报错 | 含义 |
 | --- | --- |
-| `Unsupported input format: .txt (only .lakeboard and .xmind are supported)` | 输入扩展名不受支持 |
+| `Unsupported input format: .txt (supported: .opml, .mm, .md, .markdown, .lakeboard, .xmind, .mmap, .itmz, .smmx, .csv)` | 输入扩展名不受支持 |
 | `Output file already exists: …` | 输出文件已存在，需加 `--overwrite` |
 | `--output only works with a single export format; use --out-dir instead` | `--output` 只能配合单一导出格式 |
-| `.xmind file is missing content.json; it is probably an old XMind 8 file (only XMind Zen/2020+ is supported)` | 旧版 XMind 8 文件，不受支持 |
+| `.xmind file has neither content.json nor content.xml` | `.xmind` 里既没有 Zen 的 content.json，也没有 XMind 8 的 content.xml |
 
 ### Web 模式
 
@@ -109,7 +108,7 @@ npm run build:web
 ```
 
 Web 界面支持中文和英文，以下以英文界面文字为例，提供：
-- 拖拽上传 `.lakeboard` 和 `.xmind` 文件（`Drop a file here, or click to choose one`）
+- 拖拽上传 `.opml`、`.mm`、`.md`、`.lakeboard`、`.xmind`、`.mmap`、`.itmz`、`.smmx` 和 `.csv` 文件（`Drop a mind map`）
 - 实时转换为 Markdown（转换中显示 `Converting…`）
 - 切换 `Generic Markdown` / `XMind import style` 两种 Markdown 风格
 - Markdown 源码视图和树形结构预览（`Tree preview`），并显示 `Nodes` / `Depth` 统计
@@ -219,10 +218,19 @@ node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
 
 ## 支持的输入格式
 
-| 格式 | 扩展名 | 说明 |
-| --- | --- | --- |
-| 语雀画板 | `.lakeboard` | JSON 格式的思维导图 |
-| XMind | `.xmind` | ZIP 归档包含 `content.json`（仅支持 XMind Zen/2020+ 格式） |
+| 格式 | 扩展名 | 读成 Markdown | 写出 |
+| --- | --- | --- | --- |
+| OPML | `.opml` | 是 | — |
+| FreeMind / Freeplane | `.mm` | 是 | — |
+| Markdown 大纲 | `.md`、`.markdown` | 是 | XMind |
+| 语雀画板 | `.lakeboard` | 是 | XMind |
+| XMind Zen 与 XMind 8 | `.xmind` | 是 | XMind |
+| MindManager | `.mmap` | 是 | — |
+| iThoughts | `.itmz` | 是 | — |
+| SimpleMind | `.smmx` | 是 | — |
+| CSV 大纲 | `.csv` | 是，一行一个主题 | — |
+
+不保留：样式、布局、图标、关联线和加密节点。MindNode 的原生包不读取，请导出 OPML。
 
 ## 输出格式
 
@@ -269,7 +277,7 @@ npm run test         # 运行测试
 ## 当前限制
 
 - 保留文本、层级和顺序，但不保留样式、颜色和布局信息
-- 不支持 XMind 8（旧版 XML 格式），仅支持 XMind Zen/2020+（JSON 格式）
+- `.xmind` 读取 Zen 的 `content.json` 和 XMind 8 的 `content.xml`。CSV 必须是大纲：每行只有一个主题，列号表示层级
 - 如果遇到新的 `.lakeboard` 结构变体，可能需要补充解析逻辑
 
 

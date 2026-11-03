@@ -26,6 +26,7 @@ describe('web translations', () => {
     expect(html).not.toContain('aria-label="Switch to Chinese"');
     expect(html).toContain(`aria-label="${en.chooseAria}"`);
     expect(html).toContain(`<p class="drop-title">${en.drop}</p>`);
+    expect(html).toContain('accept=".opml,.mm,.md,.markdown,.lakeboard,.xmind,.mmap,.itmz,.smmx,.csv"');
   });
 
   it('starts dropzone accessible names with the visible label in both languages', () => {
@@ -130,6 +131,13 @@ it('maps known conversion failures and hides unknown error details', async () =>
     ['wrong.lakeboard', '{}', 'errorLakeFormat'],
     ['empty.lakeboard', '{"format":"lakeboard"}', 'errorBody'],
     ['wrong.txt', '', 'errorFormat'],
+    ['broken.opml', '<nope', 'errorOpml'],
+    ['broken.mm', '<nope', 'errorFreeMind'],
+    ['empty.md', 'Just a paragraph', 'errorMarkdown'],
+    ['broken.mmap', '<nope', 'errorMindManager'],
+    ['broken.itmz', '<nope', 'errorIThoughts'],
+    ['broken.smmx', '<nope', 'errorSimpleMind'],
+    ['table.csv', 'name,email', 'errorCsv'],
   ] as const) {
     try {
       await convertFile(new File([content], name));

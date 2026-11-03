@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Document.xml packed as test-fixtures/mindmanager.mmap -->
+<ap:Map xmlns:ap="http://schemas.mindjet.com/MindManager/Application/2004">
+  <ap:OneTopic>
+    <ap:Topic OId="root">
+      <ap:Text PlainText="MindManager root"/>
+      <ap:SubTopics>
+        <ap:Topic OId="a">
+          <ap:Text PlainText="Alpha"/>
+          <ap:SubTopics>
+            <ap:Topic OId="a1">
+              <ap:Text PlainText="Alpha.1"/>
+              <ap:Notes>
+                <ap:NotesData PlainText="Ship it"/>
+              </ap:Notes>
+            </ap:Topic>
+          </ap:SubTopics>
+        </ap:Topic>
+        <ap:Topic OId="b">
+          <ap:Text PlainText="Beta"/>
+          <ap:Hyperlink Url="https://example.com/beta"/>
+          <ap:Task>
+            <ap:Category Name="P1"/>
+          </ap:Task>
+        </ap:Topic>
+      </ap:SubTopics>
+      <ap:FloatingTopics>
+        <ap:Topic OId="f">
+          <ap:Text PlainText="Floating"/>
+        </ap:Topic>
+      </ap:FloatingTopics>
+    </ap:Topic>
+  </ap:OneTopic>
+</ap:Map>

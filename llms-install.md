@@ -21,7 +21,7 @@ Nothing else is required. The first start downloads the package from npm.
 
 ## Verify
 
-Ask the agent to call the `convert` tool on any `.xmind` or `.lakeboard` file with an absolute path, for example:
+Ask the agent to call the `convert` tool on a mind map with an absolute path. Inputs are `.opml`, `.mm` (FreeMind and Freeplane), `.md` / `.markdown`, `.lakeboard`, `.xmind` (XMind Zen and XMind 8), `.mmap` (MindManager), `.itmz` (iThoughts), `.smmx` (SimpleMind), and `.csv` (one topic per row). For example:
 
 ```
 convert({ "path": "/absolute/path/to/map.xmind", "format": "md" })
@@ -29,7 +29,7 @@ convert({ "path": "/absolute/path/to/map.xmind", "format": "md" })
 
 `convert` is read-only. Arguments:
 
-- `path` (required): absolute path to a `.xmind` (XMind Zen / 2020+) or `.lakeboard` file. A leading `~` or `~/` (also `~\` on Windows) is expanded. Relative paths resolve against the server's working directory, so prefer absolute paths.
+- `path` (required): absolute path to `.opml`, `.mm`, `.md`, `.markdown`, `.lakeboard`, `.xmind` (XMind Zen or XMind 8), `.mmap`, `.itmz`, `.smmx`, or `.csv`. A leading `~` or `~/` (also `~\` on Windows) is expanded. Relative paths resolve against the server's working directory, so prefer absolute paths. `inspect` returns the format in `source`.
 - `format`: `md` (default), `json` or `outline`.
 - `sheet`: 1-based index or title of one XMind sheet. All sheets are returned by default.
 - `maxNodes` (default 2000, max 50000) and `maxDepth` (root is depth 0). Output past the limit is cut and flagged as `truncated`.
@@ -46,5 +46,5 @@ convert({ "path": "/absolute/path/to/map.xmind", "format": "md" })
 ## Troubleshooting
 
 - `File not found ... (resolved to ...)`: pass an absolute path.
-- `missing content.json`: the file is an XMind 8 (legacy XML) file, which is not supported.
+- `neither content.json nor content.xml`: the `.xmind` zip has neither a Zen workbook nor an XMind 8 workbook.
 - `npx` not found: install Node.js 20.12+ and restart the client.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<iThoughts app="iThoughts" app-version="6.6">
+  <topic uuid="root" text="iThoughts root" position="{0, 0}">
+    <topic uuid="alpha" text="Alpha">
+      <topic uuid="alpha-1" text="Alpha.1"/>
+    </topic>
+    <topic uuid="beta" text="Beta" link="https://example.com/beta" note="A note"/>
+  </topic>
+</iThoughts>

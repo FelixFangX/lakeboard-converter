@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simplemind-mindmaps>
+  <mindmap>
+    <meta><title text="Launch"/></meta>
+    <topics>
+      <topic id="1" parent="-1" text="SimpleMind root"/>
+      <topic id="2" parent="1" text="Alpha\Nline two">
+        <note>Ship it</note>
+      </topic>
+      <topic id="3" parent="1" text="Beta &amp; co">
+        <link urllink="https://example.com/beta"/>
+      </topic>
+    </topics>
+  </mindmap>
+</simplemind-mindmaps>
