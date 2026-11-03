@@ -14,7 +14,7 @@ const inputs = supportedInputList();
 
 program
   .name('lakeboard-converter')
-  .description(`Read mind maps as Markdown for agents. Inputs: ${inputs}. XMind 8 XML is not supported.`)
+  .description(`Read mind maps as Markdown for agents and humans. Inputs: ${inputs}.`)
   .version(version);
 
 program

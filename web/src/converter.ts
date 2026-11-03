@@ -1,10 +1,13 @@
 import { createFallbackIds } from '../../src/core/fallback-ids.js';
+import { parseCsvContent } from '../../src/core/parse-csv.js';
 import { parseFreeMindContent } from '../../src/core/parse-freemind.js';
+import { parseIThoughtsBuffer } from '../../src/core/parse-ithoughts.js';
 import { parseMarkdownOutline } from '../../src/core/parse-markdown.js';
 import { parseMindManagerBuffer } from '../../src/core/parse-mindmanager.js';
 import { parseOpmlContent } from '../../src/core/parse-opml.js';
+import { parseSimpleMindBuffer } from '../../src/core/parse-simplemind.js';
+import { parseXmindBuffer } from '../../src/core/parse-xmind.js';
 import type { SourceFormat } from '../../src/core/types.js';
-import JSZip from 'jszip';
 
 export interface TopicNode {
   id: string;
@@ -151,82 +154,6 @@ function parseLakeboardContent(content: string): MindMapDocument {
   return { format: 'lakeboard', root, nodeCount, maxDepth, sheets: [{ index: 1, title: root.title, root, nodeCount, maxDepth }] };
 }
 
-// ─── XMind parser ───
-
-interface XMindTopic {
-  id?: string;
-  title?: string;
-  children?: {
-    attached?: XMindTopic[];
-  };
-  notes?: {
-    plain?: { content?: string };
-  };
-  labels?: string[];
-  href?: string;
-}
-
-interface XMindSheet {
-  id?: string;
-  title?: string;
-  rootTopic?: XMindTopic;
-}
-
-function convertXMindTopic(topic: XMindTopic, order: number, path: string, fallbackId: (base: string) => string): TopicNode {
-  const children = topic.children?.attached ?? [];
-  return {
-    id: topic.id ?? fallbackId(`xmind-node-${path}`),
-    title: topic.title ?? '(untitled)',
-    order,
-    children: children.map((child, index) => convertXMindTopic(child, index, `${path}.${index}`, fallbackId)),
-    notes: topic.notes?.plain?.content,
-    labels: topic.labels,
-    href: topic.href,
-  };
-}
-
-async function parseXmindBuffer(buffer: ArrayBuffer): Promise<MindMapDocument> {
-  let zip: JSZip;
-  try {
-    zip = await JSZip.loadAsync(buffer);
-  } catch {
-    throw new Error(
-      'Cannot unzip .xmind file: it may be corrupt or not a valid ZIP archive',
-    );
-  }
-
-  const contentFile = zip.file('content.json');
-  if (!contentFile) {
-    throw new Error(
-      '.xmind file is missing content.json; it is probably an old XMind 8 file (only XMind Zen/2020+ is supported)',
-    );
-  }
-
-  let sheets: XMindSheet[];
-  try {
-    const contentStr = await contentFile.async('string');
-    sheets = JSON.parse(contentStr) as XMindSheet[];
-  } catch {
-    throw new Error('Failed to parse content.json in the .xmind file');
-  }
-
-  if (!Array.isArray(sheets) || sheets.length === 0) {
-    throw new Error('No sheets found in the .xmind file');
-  }
-
-  const fallbackId = createFallbackIds(sheets.flatMap(sheet => sheet.rootTopic ? [sheet.rootTopic] : []), topic => topic.children?.attached ?? []);
-  const parsedSheets = sheets.map((sheet, offset) => {
-    if (!sheet.rootTopic) throw new Error(`Sheet ${offset + 1} in the .xmind file has no rootTopic`);
-    const root = normalizeTree(convertXMindTopic(sheet.rootTopic, 0, `${offset}-0`, fallbackId));
-    return { index: offset + 1, title: sheet.title?.trim() || `Sheet ${offset + 1}`, root, ...validateTree(root) };
-  });
-  return {
-    format: 'xmind', sheets: parsedSheets, root: parsedSheets[0].root,
-    nodeCount: parsedSheets.reduce((sum, sheet) => sum + sheet.nodeCount, 0),
-    maxDepth: Math.max(...parsedSheets.map(sheet => sheet.maxDepth)),
-  };
-}
-
 // ─── Markdown renderer ───
 
 function title(node: TopicNode): string {
@@ -313,8 +240,14 @@ export async function convertFile(
     document = { ...parsed, format: 'markdown' };
   } else if (ext === '.mmap') {
     document = await parseMindManagerBuffer(await file.arrayBuffer());
+  } else if (ext === '.itmz') {
+    document = await parseIThoughtsBuffer(await file.arrayBuffer());
+  } else if (ext === '.smmx') {
+    document = await parseSimpleMindBuffer(await file.arrayBuffer());
+  } else if (ext === '.csv') {
+    document = parseCsvContent(await file.text());
   } else {
-    throw new Error(`Unsupported file format: ${ext || '(none)'} (supported: .opml, .mm, .md, .markdown, .lakeboard, .xmind, .mmap)`);
+    throw new Error(`Unsupported file format: ${ext || '(none)'} (supported: .opml, .mm, .md, .markdown, .lakeboard, .xmind, .mmap, .itmz, .smmx, .csv)`);
   }
 
   const markdown = renderMarkdown(document, style);
@@ -327,8 +260,9 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
   const patterns = [
     [/^The sample could not be loaded/, 'errorSample'],
     [/^Cannot unzip \.xmind/, 'errorZip'],
-    [/^\.xmind file is missing content.json/, 'errorOld'],
+    [/^\.xmind file has neither content.json nor content.xml/, 'errorOld'],
     [/^Failed to parse content.json/, 'errorXmindJson'],
+    [/^Failed to parse content.xml/, 'errorXmindXml'],
     [/^No sheets found/, 'errorSheets'],
     [/^Sheet .*no rootTopic/, 'errorRoot'],
     [/^Failed to parse .lakeboard file/, 'errorLakeJson'],
@@ -339,6 +273,9 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
     [/^Failed to parse FreeMind|^Input is not a FreeMind|^FreeMind file/, 'errorFreeMind'],
     [/^Markdown must contain/, 'errorMarkdown'],
     [/^Cannot unzip \.mmap|^MindManager file|^Failed to parse MindManager/, 'errorMindManager'],
+    [/^Cannot unzip \.itmz|^iThoughts file|^Failed to parse iThoughts/, 'errorIThoughts'],
+    [/^Cannot unzip \.smmx|^SimpleMind file|^Failed to parse SimpleMind|^Input is not a SimpleMind/, 'errorSimpleMind'],
+    [/^CSV outline|^Failed to parse CSV/, 'errorCsv'],
     [/^Unsupported file format/, 'errorFormat'],
   ] as const;
   return patterns.find(([pattern]) => pattern.test(message))?.[1] ?? 'errorGeneric';

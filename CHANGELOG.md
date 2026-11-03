@@ -6,12 +6,12 @@ All notable changes to this project are documented here, following Keep a Change
 
 ### Added
 
-- Read OPML (`.opml`), FreeMind and Freeplane (`.mm`), Markdown outlines (`.md`, `.markdown`, including markmap front matter), and MindManager (`.mmap`) to Markdown. `inspect` reports the format in `source`.
-- The browser converter accepts the same inputs.
+- Read OPML (`.opml`), FreeMind and Freeplane (`.mm`), Markdown outlines (`.md`, `.markdown`, including markmap front matter and indented outlines), MindManager (`.mmap`), XMind 8 (`content.xml` in `.xmind`), iThoughts (`.itmz`), SimpleMind (`.smmx`), and one-topic-per-row CSV (`.csv`) to Markdown. `inspect` reports the format in `source`.
+- The browser converter accepts the same inputs and shows a format badge with the Markdown preview.
 
 ### Changed
 
-- CLI help lists the input formats. XMind Zen/2020+ and Lakeboard reads are unchanged. XMind 8 XML is still unsupported.
+- CLI help lists the input formats. XMind Zen `content.json` and Lakeboard reads are unchanged. XMind 8 `content.xml` is read from the same `.xmind` zip.
 
 ## [0.5.0] - 2026-10-20
 

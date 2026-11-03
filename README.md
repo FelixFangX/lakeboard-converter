@@ -1,24 +1,38 @@
 # lakeboard-converter
 
-Mind maps your agents can actually read.
-
-Agents cannot open a mind map. Turn the file into Markdown.
+A mind map locked in one tool’s format is a dead end. This is the bridge from that file to Markdown, for agents and for people.
 
 [![npm](https://img.shields.io/npm/v/lakeboard-converter)](https://www.npmjs.com/package/lakeboard-converter)
 [![license](https://img.shields.io/github/license/FelixFangX/lakeboard-converter)](./LICENSE)
 
-**[Convert a map](https://convert.ledring.dev)** — in the browser. The file is not uploaded.
+**[Convert a map](https://convert.ledring.dev)** — in the browser. The file stays on your machine.
+
+```markdown
+# Launch plan
+- Alpha
+  > Ship the reader
+- [Docs](https://example.com/docs) `P1`
+```
+
+```bash
+npm install -g lakeboard-converter
+```
+
+`lakeboard-converter read ./map.opml` prints Markdown. The same command reads every format below. `mindmap-converter` is the same program. The package name stays `lakeboard-converter`.
 
 | Format | Read → Markdown | Write |
 | --- | --- | --- |
-| OPML `.opml` | Yes | — |
+| OPML `.opml`, including MindNode OPML export | Yes | — |
 | FreeMind and Freeplane `.mm` | Yes | — |
-| Markdown outline `.md`, `.markdown` | Yes | XMind |
+| Markdown outline `.md`, `.markdown` | Yes. Headings, lists, markmap front matter, and indented outlines | XMind |
 | Lakeboard `.lakeboard` | Yes | XMind |
-| XMind Zen / 2020+ `.xmind` | Yes | XMind |
+| XMind Zen and XMind 8 `.xmind` | Yes | XMind |
 | MindManager `.mmap` | Yes | — |
+| iThoughts `.itmz` | Yes | — |
+| SimpleMind `.smmx` | Yes | — |
+| CSV outline `.csv` | Yes. One topic per row; the column is the depth | — |
 
-Not kept: XMind 8 XML, styles, layout, icons, relationships, and encrypted nodes. MindManager notes are read from PlainText. The package name stays `lakeboard-converter`. The `mindmap-converter` command is the same program.
+Not kept: styles, layout, icons, relationships, and encrypted nodes. MindManager notes are plain text. A CSV row with several topics is rejected. The native MindNode package is not read; export OPML.
 
 English | [简体中文](./README.zh-CN.md)
 
@@ -27,9 +41,8 @@ English | [简体中文](./README.zh-CN.md)
 Requires Node.js 20.12 or newer. `convert` does not replace an existing file unless you pass `--overwrite`. `--format` is `md`, `xmind`, or `both` (default `both`). `--markdown-style` is `generic` (default) or `xmind`.
 
 ```bash
-npm install -g lakeboard-converter
-npx -y lakeboard-converter read ./map.opml --format md
-npx -y lakeboard-converter build plan.md -o plan.xmind
+lakeboard-converter read ./map.opml
+lakeboard-converter build plan.md -o plan.xmind
 ```
 
 `lakeboard-converter` with no subcommand opens the guided prompts.
@@ -42,8 +55,8 @@ The MCP tools are `convert`, `convert_many`, and `inspect` (read-only) and `from
 {
   "mcpServers": {
     "lakeboard-converter": {
-      "command": "npx",
-      "args": ["-y", "lakeboard-converter", "mcp"]
+      "command": "lakeboard-converter",
+      "args": ["mcp"]
     }
   }
 }

@@ -36,11 +36,39 @@ function stripMarkmapPreamble(markdown: string): string {
   return text;
 }
 
+/** A plain indented outline (no headings or bullets) is one topic per line. Indent is the depth. */
+function parseIndentedOutline(source: string): TopicNode[] | undefined {
+  const content = source.replace(/\r\n?/g, '\n').split('\n').filter(line => line.trim());
+  if (content.length < 2) return undefined;
+  if (content.some(line => /^(#{1,6})[ \t]+/.test(line) || /^\s*(?:[-*+]|\d+[.)])[ \t]+/.test(line))) return undefined;
+  const parsed = content.map(line => {
+    const raw = /^[ \t]*/.exec(line)?.[0] ?? '';
+    return { indent: raw.replace(/\t/g, '    ').length, title: line.trim() };
+  });
+  const base = Math.min(...parsed.map(line => line.indent));
+  if (!parsed.some(line => line.indent > base)) return undefined;
+  const roots: TopicNode[] = [];
+  const stack: { indent: number; node: TopicNode }[] = [];
+  for (const line of parsed) {
+    while (stack.length && stack.at(-1)!.indent >= line.indent) stack.pop();
+    const node: TopicNode = { id: '', title: line.title, order: 0, children: [] };
+    const parent = stack.at(-1)?.node;
+    const siblings = parent ? parent.children : roots;
+    node.order = siblings.length;
+    siblings.push(node);
+    stack.push({ indent: line.indent, node });
+  }
+  return roots;
+}
+
 /** Adjacent plain lines continue titles; blank-separated paragraphs become notes.
  * Fenced blocks are literal note lines, including fences; their contents are never parsed as topics.
  * A leading YAML block and `<!-- markmap: ... -->` comments are markmap metadata and are not topics.
+ * An indented outline with no headings or list markers is read as the same tree.
  */
 export function parseMarkdownOutline(markdown: string, options: { title?: string } = {}): MindMapDocument & { warnings: string[] } {
+  const body = stripMarkmapPreamble(markdown);
+  const indented = parseIndentedOutline(body);
   const roots: TopicNode[] = [];
   const levels = new Map<TopicNode, number>();
   const headings: { level: number; node: TopicNode }[] = [];
@@ -51,7 +79,8 @@ export function parseMarkdownOutline(markdown: string, options: { title?: string
   let blank = false;
   let fence: { char: string; length: number } | undefined;
   const note = (line: string) => { if (current) current.notes = current.notes === undefined ? line : `${current.notes}\n${line}`; };
-  for (const line of stripMarkmapPreamble(markdown).replace(/\r\n?/g, '\n').split('\n')) {
+  if (indented) roots.push(...indented);
+  for (const line of indented ? [] : body.replace(/\r\n?/g, '\n').split('\n')) {
     const trimmed = line.trimStart();
     if (!current && line.trim() && (fence || !/^(#{1,6})[ \t]+|^\s*(?:[-*+]|\d+[.)])[ \t]+/.test(line))) ignoredLines++;
     const marker = /^(`{3,}|~{3,})/.exec(trimmed);

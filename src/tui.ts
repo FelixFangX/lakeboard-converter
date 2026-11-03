@@ -29,6 +29,9 @@ function formatBadge(ext: string): string {
     case '.md':
     case '.markdown': return green('[Markdown]');
     case '.mmap': return magenta('[MindManager]');
+    case '.itmz': return cyan('[iThoughts]');
+    case '.smmx': return yellow('[SimpleMind]');
+    case '.csv': return green('[CSV]');
     default: return dim(ext);
   }
 }
@@ -97,7 +100,7 @@ async function scanForFiles(
 
 function printBanner(): void {
   const title = `   🗺  MindMap Converter  v${version}`;
-  const subtitle = '   OPML, FreeMind, Markdown, Lakeboard, XMind → Markdown';
+  const subtitle = '   Mind maps → Markdown';
   // The map glyph occupies two terminal columns (and two UTF-16 code units).
   const width = Math.max(42, title.length + 3, subtitle.length + 3);
   console.log();

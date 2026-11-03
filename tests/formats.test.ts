@@ -67,6 +67,58 @@ const mindmanager = [
   '',
 ].join('\n');
 
+const xmind8 = [
+  '# XMind 8 root',
+  '- Alpha',
+  '  > Ship it',
+  '- [Beta](https://example.com/beta) `P1`',
+  '- Floating',
+  '',
+].join('\n');
+
+const ithoughts = [
+  '# iThoughts root',
+  '- Alpha',
+  '  - Alpha.1',
+  '- [Beta](https://example.com/beta)',
+  '  > A note',
+  '',
+].join('\n');
+
+const simplemind = [
+  '# SimpleMind root',
+  '- Alpha',
+  '  line two',
+  '  > Ship it',
+  '- [Beta & co](https://example.com/beta)',
+  '',
+].join('\n');
+
+const outline = [
+  '# Outline root',
+  '- Alpha',
+  '  - Alpha.1',
+  '- Beta & co',
+  '',
+].join('\n');
+
+const freemindEdges = [
+  '# Edges',
+  '- Alpha',
+  '  > Line one',
+  '  > Line two',
+  '- new child',
+  '  - Kept',
+  '- Secret',
+  '',
+].join('\n');
+
+async function packFixture(name: string, entry: string): Promise<Buffer> {
+  const zip = new JSZip();
+  zip.file(entry, await readFile(fixture(name)), { date: new Date('2026-01-01T00:00:00Z') });
+  return zip.generateAsync({ type: 'nodebuffer' });
+}
+
 async function packedMindManager(): Promise<Buffer> {
   const zip = new JSZip();
   zip.file('Document.xml', await readFile(fixture('mindmanager.xml')));
@@ -98,6 +150,15 @@ it('reads FreeMind and Freeplane maps, including folded topics, rich notes and a
   expect(noted.markdown).toBe('# Root\n> A & B\n');
   expect(noted.document.format).toBe('freemind');
   await expect(convertBuffer(Buffer.from('<map></map>'), 'freemind')).rejects.toThrow('no root node');
+  const edges = await convertBuffer(await readFile(fixture('freemind-edges.mm')), 'freemind');
+  expect(edges.markdown).toBe(freemindEdges);
+  expect(edges.markdown).not.toContain('button_ok');
+  expect(edges.markdown).not.toContain('arrowlink');
+  const wrapped = await convertBuffer(Buffer.from('<map version="1.0.1"><node TEXT="A"/><node TEXT="B"/></map>'), 'freemind');
+  expect(wrapped.markdown).toBe('# Mind map\n- A\n- B\n');
+  const richTitle = await convertBuffer(Buffer.from('<map version="1.0.1"><node><richcontent TYPE="NODE"><html><body><p>Line one<br/>Line two</p></body></html></richcontent></node></map>'), 'freemind');
+  expect(richTitle.document.format).toBe('freeplane');
+  expect(richTitle.markdown).toBe('# Line one\nLine two\n');
 });
 
 it('reads markmap headings and ignores front matter and markmap comments', async () => {
@@ -128,6 +189,72 @@ it('reads MindManager zip and raw Document.xml, including notes, links, categori
   await expect(convertBuffer(Buffer.from('PK\x03\x04broken'), 'mindmanager')).rejects.toThrow('Cannot unzip .mmap');
 });
 
+it('reads XMind 8 content.xml and still reads Zen content.json', async () => {
+  const legacy = await packFixture('xmind8-content.xml', 'content.xml');
+  const fromZip = await convertBuffer(legacy, 'xmind');
+  expect(fromZip.markdown).toBe(xmind8);
+  expect(fromZip.document).toMatchObject({ format: 'xmind', nodeCount: 4, maxDepth: 1 });
+  const second = `<?xml version="1.0"?>
+<xmap-content>
+  <sheet><title>Plan</title><topic id="a"><title>Root</title></topic></sheet>
+  <sheet><title>Later</title><topic id="b"><title>Next</title>
+    <notes><html><p>Soon</p></html></notes>
+  </topic></sheet>
+</xmap-content>`;
+  const zip = new JSZip();
+  zip.file('content.xml', second);
+  const sheets = await convertBuffer(await zip.generateAsync({ type: 'nodebuffer' }), 'xmind');
+  expect(sheets.markdown).toBe('# Plan\n## Root\n\n# Later\n## Next\n> Soon\n');
+  const empty = new JSZip();
+  await expect(convertBuffer(await empty.generateAsync({ type: 'nodebuffer' }), 'xmind')).rejects.toThrow('neither content.json nor content.xml');
+  const zen = new JSZip();
+  zen.file('content.json', JSON.stringify([{ title: 'Zen', rootTopic: { id: 'z', title: 'Zen root' } }]));
+  expect((await convertBuffer(await zen.generateAsync({ type: 'nodebuffer' }), 'xmind')).markdown).toBe('# Zen root\n');
+});
+
+it('reads iThoughts mapdata.xml from an .itmz zip', async () => {
+  const zipped = await packFixture('ithoughts-mapdata.xml', 'mapdata.xml');
+  const read = await convertBuffer(zipped, 'ithoughts');
+  expect(read.markdown).toBe(ithoughts);
+  expect(read.document).toMatchObject({ format: 'ithoughts', nodeCount: 4, maxDepth: 2 });
+  const raw = await convertBuffer(await readFile(fixture('ithoughts-mapdata.xml')), 'ithoughts');
+  expect(raw.markdown).toBe(ithoughts);
+  await expect(convertBuffer(Buffer.from('<iThoughts></iThoughts>'), 'ithoughts')).rejects.toThrow('no topic');
+  await expect(convertBuffer(Buffer.from('PK\x03\x04broken'), 'ithoughts')).rejects.toThrow('Cannot unzip .itmz');
+});
+
+it('reads SimpleMind topics linked by parent id, including notes and links', async () => {
+  const zipped = await packFixture('simplemind-mindmap.xml', 'document/mindmap.xml');
+  const read = await convertBuffer(zipped, 'simplemind');
+  expect(read.markdown).toBe(simplemind);
+  expect(read.document).toMatchObject({ format: 'simplemind', nodeCount: 3, maxDepth: 1, sheets: [{ title: 'Launch' }] });
+  const raw = await convertBuffer(await readFile(fixture('simplemind-mindmap.xml')), 'simplemind');
+  expect(raw.markdown).toBe(simplemind);
+  const nested = await convertBuffer(Buffer.from('<simplemind-mindmaps><mindmap><topics><topic id="1" text="Root"><topic id="2" text="Child"/></topic></topics></mindmap></simplemind-mindmaps>'), 'simplemind');
+  expect(nested.markdown).toBe('# Root\n- Child\n');
+  await expect(convertBuffer(Buffer.from('<map></map>'), 'simplemind')).rejects.toThrow('not a SimpleMind');
+  await expect(convertBuffer(Buffer.from('PK\x03\x04broken'), 'simplemind')).rejects.toThrow('Cannot unzip .smmx');
+});
+
+it('reads a one-topic-per-row CSV outline and an indented Markdown outline', async () => {
+  const csv = await convertBuffer(await readFile(fixture('outline.csv')), 'csv');
+  expect(csv.markdown).toBe(outline);
+  expect(csv.document).toMatchObject({ format: 'csv', nodeCount: 4, maxDepth: 2 });
+  const headed = await convertBuffer(Buffer.from('Level 1,Level 2,Level 3\nOutline root,,\n,Alpha,\n,,Alpha.1\n,"Beta & co",,\n'), 'csv');
+  expect(headed.markdown).toBe('# Outline root\n- Alpha\n  - Alpha.1\n- Beta & co\n');
+  const quoted = await convertBuffer(Buffer.from('Root\n,"Beta, friends"\n'), 'csv');
+  expect(quoted.markdown).toBe('# Root\n- Beta, friends\n');
+  await expect(convertBuffer(Buffer.from('name,email\nAda,ada@example.com\n'), 'csv')).rejects.toThrow('one topic');
+  await expect(convertBuffer(Buffer.from(',Alpha\n'), 'csv')).rejects.toThrow('skips a level');
+  await expect(convertBuffer(Buffer.from(''), 'csv')).rejects.toThrow('no topics');
+  const indented = await convertBuffer(await readFile(fixture('indented.md')), 'markdown');
+  expect(indented.markdown).toBe(outline);
+  expect(indented.document).toMatchObject({ format: 'markdown', nodeCount: 4, maxDepth: 2 });
+  const marked = await convertBuffer(Buffer.from('---\ntitle: Demo\n---\nOutline root\n\tAlpha\n'), 'markdown');
+  expect(marked.markdown).toBe('# Outline root\n- Alpha\n');
+  expect(marked.document.format).toBe('markdown');
+});
+
 it('inspects and reads each new format end to end, including Markdown extensions', async () => {
   const cases = [
     ['outline.opml', 'opml', opml],
@@ -135,6 +262,12 @@ it('inspects and reads each new format end to end, including Markdown extensions
     ['freeplane.mm', 'freeplane', freeplane],
     ['markmap.md', 'markdown', markmap],
     ['mindmanager.mmap', 'mindmanager', mindmanager],
+    ['freemind-edges.mm', 'freemind', freemindEdges],
+    ['outline.csv', 'csv', outline],
+    ['indented.md', 'markdown', outline],
+    ['xmind8.xmind', 'xmind', xmind8],
+    ['ithoughts.itmz', 'ithoughts', ithoughts],
+    ['simplemind.smmx', 'simplemind', simplemind],
   ] as const;
   for (const [name, source, markdown] of cases) {
     const read = await readMindMap(fixture(name), 'md');
@@ -167,7 +300,7 @@ it('lists every input format in CLI help and prints OPML from read', async () =>
   const readHelp = await run(process.execPath, ['--import', 'tsx', 'src/cli.ts', 'read', '--help']);
   const inspectHelp = await run(process.execPath, ['--import', 'tsx', 'src/cli.ts', 'inspect', '--help']);
   const convertHelp = await run(process.execPath, ['--import', 'tsx', 'src/cli.ts', 'convert', '--help']);
-  for (const extension of ['.opml', '.mm', '.md', '.markdown', '.lakeboard', '.xmind', '.mmap']) {
+  for (const extension of ['.opml', '.mm', '.md', '.markdown', '.lakeboard', '.xmind', '.mmap', '.itmz', '.smmx', '.csv']) {
     expect(help.stdout).toContain(extension);
     expect(readHelp.stdout).toContain(extension);
     expect(inspectHelp.stdout).toContain(extension);
@@ -205,9 +338,20 @@ it('reports the format from MCP inspect and keeps the browser output identical',
     ['freeplane.mm', 'freemind'],
     ['markmap.md', 'markdown'],
     ['mindmanager.mmap', 'mindmanager'],
+    ['xmind8.xmind', 'xmind'],
+    ['ithoughts.itmz', 'ithoughts'],
+    ['simplemind.smmx', 'simplemind'],
+    ['outline.csv', 'csv'],
+    ['indented.md', 'markdown'],
   ] as const;
+  const archives: Record<string, Buffer> = {
+    'mindmanager.mmap': packed,
+    'xmind8.xmind': await packFixture('xmind8-content.xml', 'content.xml'),
+    'ithoughts.itmz': await packFixture('ithoughts-mapdata.xml', 'mapdata.xml'),
+    'simplemind.smmx': await packFixture('simplemind-mindmap.xml', 'document/mindmap.xml'),
+  };
   for (const [name, format] of files) {
-    const data = name === 'mindmanager.mmap' ? packed : await readFile(fixture(name));
+    const data = archives[name] ?? await readFile(fixture(name));
     for (const style of ['generic', 'xmind'] as const) {
       const browser = await webConvert(new File([new Uint8Array(data)], name), style);
       const core = await convertBuffer(data, format, style);

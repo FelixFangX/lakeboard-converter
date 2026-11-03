@@ -19,7 +19,7 @@ export function createServer(): McpServer {
     {
       title: 'Read a mind map',
       description:
-        `Pass an absolute path. Read an OPML, FreeMind, Freeplane, Markdown outline, Yuque Lakeboard, XMind Zen/2020+, or MindManager mind map (${supportedInputList()}) from a local path. ` +
+        `Pass an absolute path. Read an OPML, FreeMind, Freeplane, Markdown outline, Yuque Lakeboard, XMind (Zen or XMind 8), MindManager, iThoughts, SimpleMind, or CSV outline (${supportedInputList()}) from a local path. ` +
         'All sheets are included (each under its sheet title); pass sheet (1-based index or title) to read one. Large maps are cut at maxNodes (default 2000) and flagged as truncated. ' +
         'format "md" = nested Markdown list, "json" = topic tree, "outline" = compact indented text. Read-only.',
       inputSchema: {

@@ -2,7 +2,7 @@
   "name": "lakeboard-converter",
   "version": "0.5.0",
   "mcpName": "io.github.FelixFangX/lakeboard-converter",
-  "description": "Mind maps your agents can actually read — OPML, FreeMind, Markdown, Lakeboard, and XMind → Markdown.",
+  "description": "Universal mind map to Markdown bridge for agents and humans. OPML, FreeMind, XMind, MindManager, iThoughts, SimpleMind, and CSV.",
   "type": "module",
   "bin": {
     "lakeboard-converter": "./dist/cli.js",
@@ -30,6 +30,8 @@
     "freemind",
     "freeplane",
     "mindmanager",
+    "ithoughts",
+    "simplemind",
     "markmap",
     "converter",
     "mindmap",

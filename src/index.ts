@@ -8,7 +8,8 @@ import { renderXmind } from './render/xmind.js';
 
 export type { MindMapDocument, TopicNode, SourceFormat, MarkdownStyle } from './core/types.js';
 export { parseLakeboardFile } from './core/parse-lakeboard.js';
-export { parseXmindFile, parseXmindBuffer } from './core/parse-xmind.js';
+export { parseXmindBuffer } from './core/parse-xmind.js';
+export { parseXmindFile } from './core/read-source.js';
 export { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 export { renderXmind } from './render/xmind.js';
 export { readMindMap, readMindMaps, inspectMindMap, AGENT_FORMATS } from './agent.js';

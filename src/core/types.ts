@@ -9,7 +9,7 @@ export interface TopicNode {
   href?: string;
 }
 
-export const SOURCE_FORMATS = ['lakeboard', 'xmind', 'opml', 'freemind', 'freeplane', 'markdown', 'mindmanager'] as const;
+export const SOURCE_FORMATS = ['lakeboard', 'xmind', 'opml', 'freemind', 'freeplane', 'markdown', 'mindmanager', 'ithoughts', 'simplemind', 'csv'] as const;
 export type SourceFormat = typeof SOURCE_FORMATS[number];
 
 export interface MindMapSheet {
