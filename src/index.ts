@@ -2,8 +2,7 @@ import { selectSheet } from './core/select-sheet.js';
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { MarkdownStyle, MindMapDocument, SourceFormat } from './core/types.js';
-import { parseLakeboardFile, parseLakeboardContent } from './core/parse-lakeboard.js';
-import { parseXmindFile, parseXmindBuffer } from './core/parse-xmind.js';
+import { parseSourceBuffer, readMindMapFile } from './core/read-source.js';
 import { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 import { renderXmind } from './render/xmind.js';
 
@@ -30,13 +29,6 @@ export interface ConvertInputOptions {
   output?: string;
   outDir?: string;
   overwrite?: boolean;
-}
-
-function detectSourceFormat(filePath: string): SourceFormat {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.lakeboard') return 'lakeboard';
-  if (ext === '.xmind') return 'xmind';
-  throw new Error(`Unsupported input format: ${ext} (only .lakeboard and .xmind are supported)`);
 }
 
 async function ensureWritable(filePath: string, overwrite = false): Promise<void> {
@@ -72,16 +64,8 @@ function resolveOutputPaths(options: ConvertInputOptions): { mdPath?: string; xm
   };
 }
 
-async function parseInputFile(filePath: string): Promise<MindMapDocument> {
-  const sourceFormat = detectSourceFormat(filePath);
-  if (sourceFormat === 'xmind') {
-    return parseXmindFile(filePath);
-  }
-  return parseLakeboardFile(filePath);
-}
-
 export async function convertFile(options: ConvertInputOptions): Promise<ConvertResult> {
-  const document = selectSheet(await parseInputFile(options.input), options.sheet);
+  const document = selectSheet(await readMindMapFile(options.input), options.sheet);
   const { mdPath, xmindPath } = resolveOutputPaths(options);
   const outputs: string[] = [];
 
@@ -117,16 +101,8 @@ export async function convertBuffer(
   markdownStyle: MarkdownStyle = 'generic',
   options: { sheet?: string | number } = {},
 ): Promise<{ markdown: string; document: MindMapDocument }> {
-  let document: MindMapDocument;
-
-  if (sourceFormat === 'xmind') {
-    document = await parseXmindBuffer(buffer);
-  } else {
-    const bytes = buffer instanceof ArrayBuffer ? Buffer.from(buffer) : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    document = parseLakeboardContent(bytes.toString('utf-8'));
-  }
-
-  document = selectSheet(document, options.sheet);
+  const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
+  const document = selectSheet(await parseSourceBuffer(bytes, sourceFormat), options.sheet);
   const markdown =
     markdownStyle === 'xmind' ? renderXmindMarkdown(document) : renderGenericMarkdown(document);
 

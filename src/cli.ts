@@ -5,19 +5,22 @@ import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { convertFile } from './index.js';
 import { batchText, inspectSummary, inspectMindMap, readMindMaps, buildMindMap, readMindMap, type AgentFormat } from './agent.js';
+import { supportedInputList } from './core/read-source.js';
 
 const { version } = createRequire(import.meta.url)('../package.json');
 const program = new Command();
 
+const inputs = supportedInputList();
+
 program
   .name('lakeboard-converter')
-  .description('Convert .lakeboard / .xmind mind maps to Markdown or XMind')
+  .description(`Read mind maps as Markdown for agents. Inputs: ${inputs}. XMind 8 XML is not supported.`)
   .version(version);
 
 program
   .command('convert')
   .description('Convert a file (non-interactive)')
-  .argument('<input>', 'Input file path (.lakeboard or .xmind)')
+  .argument('<input>', `Input file (${inputs})`)
   .option('-f, --format <format>', 'Export format: md | xmind | both', 'both')
   .option('--markdown-style <style>', 'Markdown style: generic | xmind', 'generic')
   .option('-o, --output <path>', 'Output file path (single export format only)')
@@ -63,7 +66,7 @@ program
 program
   .command('read')
   .description('Print a mind map to stdout for agents and scripts (never writes files)')
-  .argument('<inputs...>', '.lakeboard or .xmind files')
+  .argument('<inputs...>', `Mind map files (${inputs})`)
   .option('--max-total-nodes <n>', 'Maximum batch output nodes (default: 10000)', Number)
   .option('--max-nodes <n>', 'Maximum output nodes (default: 2000)', Number)
   .option('--max-depth <n>', 'Maximum topic depth (root = 0)', Number)
@@ -94,7 +97,7 @@ program
 program
   .command('inspect')
   .description('Check mind map size without rendering content')
-  .argument('<input>', '.lakeboard or .xmind file')
+  .argument('<input>', `Mind map file (${inputs})`)
   .option('--sheet <index|name>', 'Select a sheet by index or title')
   .option('--json', 'Print a machine-readable JSON result', false)
   .action(async (input, options) => {

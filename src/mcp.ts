@@ -7,6 +7,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { batchText, inspectSummary, inspectMindMap, readMindMaps, buildMindMap, readMindMap } from './agent.js';
+import { supportedInputList } from './core/read-source.js';
+import { SOURCE_FORMATS } from './core/types.js';
 
 const { version } = createRequire(import.meta.url)('../package.json');
 
@@ -17,18 +19,18 @@ export function createServer(): McpServer {
     {
       title: 'Read a mind map',
       description:
-        'Pass an absolute path. Read a Yuque Lakeboard (.lakeboard) or XMind (.xmind) mind map from a local path. ' +
+        `Pass an absolute path. Read an OPML, FreeMind, Freeplane, Markdown outline, Yuque Lakeboard, XMind Zen/2020+, or MindManager mind map (${supportedInputList()}) from a local path. ` +
         'All sheets are included (each under its sheet title); pass sheet (1-based index or title) to read one. Large maps are cut at maxNodes (default 2000) and flagged as truncated. ' +
         'format "md" = nested Markdown list, "json" = topic tree, "outline" = compact indented text. Read-only.',
       inputSchema: {
-        path: z.string().describe('Absolute path to a .lakeboard or .xmind file'),
+        path: z.string().describe(`Absolute path to a mind map (${supportedInputList()})`),
         sheet: z.union([z.string(), z.number().int().min(1)]).optional(),
         maxNodes: z.number().int().min(1).max(50000).optional(),
         maxDepth: z.number().int().min(0).optional(),
         format: z.enum(['md', 'json', 'outline']).default('md'),
       },
       outputSchema: {
-        schemaVersion: z.literal(1), file: z.string(), source: z.enum(['lakeboard', 'xmind']),
+        schemaVersion: z.literal(1), file: z.string(), source: z.enum(SOURCE_FORMATS),
         format: z.enum(['md', 'json', 'outline']), nodeCount: z.number().int(), maxDepth: z.number().int(),
         sheets: z.array(z.object({ index: z.number().int(), title: z.string(), nodeCount: z.number().int(), maxDepth: z.number().int() })),
         selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
@@ -50,7 +52,7 @@ export function createServer(): McpServer {
   const sheetSchema = z.union([z.string(), z.number().int().min(1)]).optional();
   const sheetMetadata = z.object({ index: z.number().int(), title: z.string(), nodeCount: z.number().int(), maxDepth: z.number().int() });
   const readMetadata = z.object({
-    schemaVersion: z.literal(1), file: z.string(), source: z.enum(['lakeboard', 'xmind']),
+    schemaVersion: z.literal(1), file: z.string(), source: z.enum(SOURCE_FORMATS),
     format: z.enum(['md', 'json', 'outline']), nodeCount: z.number().int(), maxDepth: z.number().int(),
     sheets: z.array(sheetMetadata), selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
     truncated: z.boolean(), warnings: z.array(z.string()),
@@ -85,10 +87,10 @@ export function createServer(): McpServer {
   });
   server.registerTool('inspect', {
     title: "Check a mind map's size",
-    description: 'Parse a local mind map and count topics without rendering content. Pass an absolute path. Read-only.',
+    description: `Parse a local mind map (${supportedInputList()}) and count topics without rendering content. Pass an absolute path. source reports the format. Read-only.`,
     inputSchema: { path: z.string().refine(value => path.isAbsolute(value), 'Pass an absolute path'), sheet: sheetSchema },
     outputSchema: {
-      schemaVersion: z.literal(1), file: z.string(), source: z.enum(['lakeboard', 'xmind']), bytes: z.number().int(),
+      schemaVersion: z.literal(1), file: z.string(), source: z.enum(SOURCE_FORMATS), bytes: z.number().int(),
       nodeCount: z.number().int(), maxDepth: z.number().int(), sheets: z.array(sheetMetadata),
       selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
     },

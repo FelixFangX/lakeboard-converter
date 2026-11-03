@@ -3,11 +3,12 @@ import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { select, input, confirm, search, Separator } from '@inquirer/prompts';
 import { convertFile } from './index.js';
+import { SUPPORTED_INPUT_EXTENSIONS } from './core/read-source.js';
 import type { MarkdownStyle } from './core/types.js';
 
 const { version } = createRequire(import.meta.url)('../package.json');
 
-const SUPPORTED_EXTENSIONS = ['.lakeboard', '.xmind'];
+const SUPPORTED_EXTENSIONS: readonly string[] = SUPPORTED_INPUT_EXTENSIONS;
 
 // ─── Colors (ANSI escape sequences, no dependency needed) ───
 
@@ -18,6 +19,19 @@ const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
 const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
 const magenta = (s: string) => `\x1b[35m${s}\x1b[0m`;
+
+function formatBadge(ext: string): string {
+  switch (ext) {
+    case '.xmind': return magenta('[XMind]');
+    case '.lakeboard': return cyan('[Lakeboard]');
+    case '.opml': return green('[OPML]');
+    case '.mm': return yellow('[FreeMind]');
+    case '.md':
+    case '.markdown': return green('[Markdown]');
+    case '.mmap': return magenta('[MindManager]');
+    default: return dim(ext);
+  }
+}
 
 // ─── File browser ───
 
@@ -83,7 +97,7 @@ async function scanForFiles(
 
 function printBanner(): void {
   const title = `   🗺  MindMap Converter  v${version}`;
-  const subtitle = '   .lakeboard / .xmind → Markdown';
+  const subtitle = '   OPML, FreeMind, Markdown, Lakeboard, XMind → Markdown';
   // The map glyph occupies two terminal columns (and two UTF-16 code units).
   const width = Math.max(42, title.length + 3, subtitle.length + 3);
   console.log();
@@ -124,7 +138,7 @@ async function selectInputFile(): Promise<string> {
 
           return filtered.map((f) => {
             const rel = path.relative(cwd, f.fullPath);
-            const badge = f.ext === '.xmind' ? magenta('[XMind]') : cyan('[Lakeboard]');
+            const badge = formatBadge(f.ext);
             return {
               name: `${badge} ${rel}`,
               value: f.fullPath,
@@ -143,7 +157,7 @@ async function selectInputFile(): Promise<string> {
   }
 
   const mode = await select({
-    message: 'No .lakeboard / .xmind files found in the current directory',
+    message: 'No mind map files found in the current directory',
     choices: [
       { name: 'Enter a file path', value: 'manual' as const },
       { name: 'Browse directories', value: 'browse' as const },
@@ -201,7 +215,7 @@ async function browseForFile(startDir: string): Promise<string> {
     if (supportedFiles.length > 0) {
       choices.push(new Separator(dim('── Convertible files ──')));
       for (const f of supportedFiles) {
-        const badge = f.ext === '.xmind' ? magenta('[XMind]') : cyan('[LB]');
+        const badge = formatBadge(f.ext);
         choices.push({ name: `${badge} ${f.name}`, value: f.fullPath });
       }
     }

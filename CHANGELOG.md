@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here, following Keep a Changelog.
 
+## [Unreleased]
+
+### Added
+
+- Read OPML (`.opml`), FreeMind and Freeplane (`.mm`), Markdown outlines (`.md`, `.markdown`, including markmap front matter), and MindManager (`.mmap`) to Markdown. `inspect` reports the format in `source`.
+- The browser converter accepts the same inputs.
+
+### Changed
+
+- CLI help lists the input formats. XMind Zen/2020+ and Lakeboard reads are unchanged. XMind 8 XML is still unsupported.
+
 ## [0.5.0] - 2026-10-20
 
 ### Added

@@ -5,9 +5,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { stat, writeFile } from 'node:fs/promises';
 import { selectSheet } from './core/select-sheet.js';
-import type { MindMapDocument, SourceFormat, TopicNode } from './core/types.js';
-import { parseLakeboardFile } from './core/parse-lakeboard.js';
-import { parseXmindFile } from './core/parse-xmind.js';
+import type { SourceFormat, TopicNode } from './core/types.js';
+import { readMindMapFile } from './core/read-source.js';
 import { renderGenericMarkdown, renderOutline } from './render/markdown.js';
 
 export type AgentFormat = 'md' | 'json' | 'outline';
@@ -44,13 +43,6 @@ function toAgentTopic(node: TopicNode): AgentTopic {
   return out;
 }
 
-async function parse(file: string): Promise<MindMapDocument> {
-  const ext = path.extname(file).toLowerCase();
-  if (ext === '.lakeboard') return parseLakeboardFile(file);
-  if (ext === '.xmind') return parseXmindFile(file);
-  throw new Error(`Unsupported file type "${ext}" (expected .lakeboard or .xmind)`);
-}
-
 async function resolveInput(file: string): Promise<{ resolved: string; bytes: number }> {
   const expanded = file === '~' ? os.homedir() : (file.startsWith('~/') || (path.sep === '\\' && file.startsWith('~\\'))) ? path.join(os.homedir(), file.slice(2)) : file;
   const resolved = path.resolve(expanded);
@@ -73,7 +65,7 @@ export async function readMindMap(file: string, format: AgentFormat, options: Re
   if (!Number.isInteger(maxNodes) || maxNodes < 1 || maxNodes > 50000) throw new Error('maxNodes must be an integer from 1 to 50000');
   if (options.maxDepth !== undefined && (!Number.isInteger(options.maxDepth) || options.maxDepth < 0)) throw new Error('maxDepth must be an integer >= 0');
   const { resolved } = await resolveInput(file);
-  const parsed = await parse(resolved);
+  const parsed = await readMindMapFile(resolved);
   const original = selectSheet(parsed, options.sheet);
   let count = 0;
   let depthCut = false;
@@ -86,7 +78,7 @@ export async function readMindMap(file: string, format: AgentFormat, options: Re
   };
   const sheets = original.sheets.flatMap(sheet => { const root = prune(sheet.root, 0); return root ? [{ ...sheet, root, ...validateTree(root) }] : []; });
   const doc = { ...original, sheets, root: sheets[0].root, nodeCount: count, maxDepth: Math.max(...sheets.map(s => s.maxDepth)) };
-  const warnings: string[] = [];
+  const warnings: string[] = [...(parsed.warnings ?? [])];
   if (sizeCut) warnings.push(`Output truncated at ${count} of ${original.nodeCount} nodes. Pass a higher maxNodes or pick a sheet.`);
   if (depthCut) warnings.push(`Output truncated at maxDepth ${options.maxDepth}. Pass a higher maxDepth to include deeper topics.`);
   const content =
@@ -120,7 +112,7 @@ export interface AgentInspectResult {
 /** Parse and count topics without rendering content. */
 export async function inspectMindMap(file: string, options: { sheet?: string | number } = {}): Promise<AgentInspectResult> {
   const { resolved, bytes } = await resolveInput(file);
-  const parsed = await parse(resolved);
+  const parsed = await readMindMapFile(resolved);
   const selected = selectSheet(parsed, options.sheet);
   return {
     schemaVersion: 1, file: resolved, source: parsed.format, bytes,
@@ -132,7 +124,7 @@ export async function inspectMindMap(file: string, options: { sheet?: string | n
 
 export function inspectSummary(result: AgentInspectResult): string {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
-  return `${plural(result.sheets.length, 'sheet')}, ${result.nodeCount} nodes, max depth ${result.maxDepth}, ${Math.ceil(result.bytes / 1024)} KB`;
+  return `${result.source}: ${plural(result.sheets.length, 'sheet')}, ${result.nodeCount} nodes, max depth ${result.maxDepth}, ${Math.ceil(result.bytes / 1024)} KB`;
 }
 
 export interface BatchReadOptions extends ReadOptions { maxTotalNodes?: number }

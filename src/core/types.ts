@@ -9,7 +9,8 @@ export interface TopicNode {
   href?: string;
 }
 
-export type SourceFormat = 'lakeboard' | 'xmind';
+export const SOURCE_FORMATS = ['lakeboard', 'xmind', 'opml', 'freemind', 'freeplane', 'markdown', 'mindmanager'] as const;
+export type SourceFormat = typeof SOURCE_FORMATS[number];
 
 export interface MindMapSheet {
   index: number;

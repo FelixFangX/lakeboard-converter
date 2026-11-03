@@ -1,4 +1,9 @@
 import { createFallbackIds } from '../../src/core/fallback-ids.js';
+import { parseFreeMindContent } from '../../src/core/parse-freemind.js';
+import { parseMarkdownOutline } from '../../src/core/parse-markdown.js';
+import { parseMindManagerBuffer } from '../../src/core/parse-mindmanager.js';
+import { parseOpmlContent } from '../../src/core/parse-opml.js';
+import type { SourceFormat } from '../../src/core/types.js';
 import JSZip from 'jszip';
 
 export interface TopicNode {
@@ -13,7 +18,7 @@ export interface TopicNode {
 
 export interface MindMapDocument {
   sheets: { index: number; title: string; root: TopicNode; nodeCount: number; maxDepth: number }[];
-  format: 'lakeboard' | 'xmind';
+  format: SourceFormat;
   root: TopicNode;
   nodeCount: number;
   maxDepth: number;
@@ -281,22 +286,35 @@ function renderMarkdown(document: MindMapDocument, style: MarkdownStyle): string
 
 // ─── Public API ───
 
+function extensionOf(name: string): string {
+  const base = name.split(/[/\\]/).pop() ?? name;
+  const dot = base.lastIndexOf('.');
+  return dot <= 0 ? '' : base.slice(dot).toLowerCase();
+}
+
 export async function convertFile(
   file: File,
   style: MarkdownStyle = 'generic',
 ): Promise<{ markdown: string; document: MindMapDocument }> {
-  const ext = file.name.split('.').pop()?.toLowerCase();
+  const ext = extensionOf(file.name);
 
   let document: MindMapDocument;
 
-  if (ext === 'xmind') {
-    const buffer = await file.arrayBuffer();
-    document = await parseXmindBuffer(buffer);
-  } else if (ext === 'lakeboard') {
-    const text = await file.text();
-    document = parseLakeboardContent(text);
+  if (ext === '.xmind') {
+    document = await parseXmindBuffer(await file.arrayBuffer());
+  } else if (ext === '.lakeboard') {
+    document = parseLakeboardContent(await file.text());
+  } else if (ext === '.opml') {
+    document = parseOpmlContent(await file.text());
+  } else if (ext === '.mm') {
+    document = parseFreeMindContent(await file.text());
+  } else if (ext === '.md' || ext === '.markdown') {
+    const parsed = parseMarkdownOutline(await file.text());
+    document = { ...parsed, format: 'markdown' };
+  } else if (ext === '.mmap') {
+    document = await parseMindManagerBuffer(await file.arrayBuffer());
   } else {
-    throw new Error(`Unsupported file format: .${ext} (only .lakeboard and .xmind are supported)`);
+    throw new Error(`Unsupported file format: ${ext || '(none)'} (supported: .opml, .mm, .md, .markdown, .lakeboard, .xmind, .mmap)`);
   }
 
   const markdown = renderMarkdown(document, style);
@@ -308,7 +326,7 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
   const message = error instanceof Error ? error.message : '';
   const patterns = [
     [/^The sample could not be loaded/, 'errorSample'],
-    [/^Cannot unzip/, 'errorZip'],
+    [/^Cannot unzip \.xmind/, 'errorZip'],
     [/^\.xmind file is missing content.json/, 'errorOld'],
     [/^Failed to parse content.json/, 'errorXmindJson'],
     [/^No sheets found/, 'errorSheets'],
@@ -317,6 +335,10 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
     [/^Input is not a supported lakeboard/, 'errorLakeFormat'],
     [/^lakeboard file is missing/, 'errorBody'],
     [/^No convertible mindmap/, 'errorMindmap'],
+    [/^Failed to parse OPML|^Input is not an OPML|^OPML file/, 'errorOpml'],
+    [/^Failed to parse FreeMind|^Input is not a FreeMind|^FreeMind file/, 'errorFreeMind'],
+    [/^Markdown must contain/, 'errorMarkdown'],
+    [/^Cannot unzip \.mmap|^MindManager file|^Failed to parse MindManager/, 'errorMindManager'],
     [/^Unsupported file format/, 'errorFormat'],
   ] as const;
   return patterns.find(([pattern]) => pattern.test(message))?.[1] ?? 'errorGeneric';

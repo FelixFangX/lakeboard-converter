@@ -23,8 +23,22 @@ function decodeTitle(node: TopicNode): void {
   node.children.forEach(decodeTitle);
 }
 
+/** Drop a leading YAML front matter block and markmap HTML comments. Leading blank lines between them are skipped. */
+function stripMarkmapPreamble(markdown: string): string {
+  let text = markdown.replace(/^\uFEFF/, '');
+  const frontMatter = /^(---)[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
+  const comment = /^[ \t]*<!--\s*markmap:[\s\S]*?-->[ \t]*(?:\r?\n|$)/;
+  for (;;) {
+    const match = frontMatter.exec(text) ?? comment.exec(text);
+    if (!match?.[0]) break;
+    text = text.slice(match[0].length).replace(/^(?:[ \t]*\r?\n)+/, '');
+  }
+  return text;
+}
+
 /** Adjacent plain lines continue titles; blank-separated paragraphs become notes.
  * Fenced blocks are literal note lines, including fences; their contents are never parsed as topics.
+ * A leading YAML block and `<!-- markmap: ... -->` comments are markmap metadata and are not topics.
  */
 export function parseMarkdownOutline(markdown: string, options: { title?: string } = {}): MindMapDocument & { warnings: string[] } {
   const roots: TopicNode[] = [];
@@ -37,7 +51,7 @@ export function parseMarkdownOutline(markdown: string, options: { title?: string
   let blank = false;
   let fence: { char: string; length: number } | undefined;
   const note = (line: string) => { if (current) current.notes = current.notes === undefined ? line : `${current.notes}\n${line}`; };
-  for (const line of markdown.replace(/\r\n?/g, '\n').split('\n')) {
+  for (const line of stripMarkmapPreamble(markdown).replace(/\r\n?/g, '\n').split('\n')) {
     const trimmed = line.trimStart();
     if (!current && line.trim() && (fence || !/^(#{1,6})[ \t]+|^\s*(?:[-*+]|\d+[.)])[ \t]+/.test(line))) ignoredLines++;
     const marker = /^(`{3,}|~{3,})/.exec(trimmed);
