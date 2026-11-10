@@ -230,7 +230,7 @@ node dist/cli.js convert ./test-fixtures/test.xmind -f md --out-dir out --json
 | SimpleMind | `.smmx` | 是 | — |
 | CSV 大纲 | `.csv` | 是，一行一个主题 | — |
 
-不保留：样式、布局、图标、关联线和加密节点。MindNode 的原生包不读取，请导出 OPML。
+浮动主题会保留。关联线、摘要主题、加密节点正文、非网页链接，以及没有纯文本的备注，会记在 `losses` 里，并在 `> Note:` 中说明（见 [docs/conversion.md](./docs/conversion.md)）。压缩包超过 32 MiB（压缩后或解压后）或超过 1024 个成员时会拒绝。样式、布局和图标仍会省略且不单独警告。MindNode 的原生包不读取，请导出 OPML。
 
 ## 输出格式
 

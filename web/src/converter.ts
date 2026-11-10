@@ -6,7 +6,9 @@ import { parseMarkdownOutline } from '../../src/core/parse-markdown.js';
 import { parseMindManagerBuffer } from '../../src/core/parse-mindmanager.js';
 import { parseOpmlContent } from '../../src/core/parse-opml.js';
 import { parseSimpleMindBuffer } from '../../src/core/parse-simplemind.js';
+import { ARCHIVE_LIMITS } from '../../src/core/bounded-zip.js';
 import { parseXmindBuffer } from '../../src/core/parse-xmind.js';
+import type { ConversionLoss } from '../../src/core/losses.js';
 import type { SourceFormat } from '../../src/core/types.js';
 
 export interface TopicNode {
@@ -25,6 +27,7 @@ export interface MindMapDocument {
   root: TopicNode;
   nodeCount: number;
   maxDepth: number;
+  losses?: ConversionLoss[];
 }
 
 export type MarkdownStyle = 'generic' | 'xmind';
@@ -224,6 +227,9 @@ export async function convertFile(
   style: MarkdownStyle = 'generic',
 ): Promise<{ markdown: string; document: MindMapDocument }> {
   const ext = extensionOf(file.name);
+  if ((ext === '.xmind' || ext === '.mmap' || ext === '.itmz' || ext === '.smmx') && file.size > ARCHIVE_LIMITS.maxArchiveBytes) {
+    throw new Error(`Cannot unzip ${ext} file: the archive is larger than ${ARCHIVE_LIMITS.maxArchiveBytes / 1024 / 1024} MiB.`);
+  }
 
   let document: MindMapDocument;
 
@@ -259,6 +265,10 @@ export function webErrorKey(error: unknown): import('./i18n.js').TranslationKey 
   const message = error instanceof Error ? error.message : '';
   const patterns = [
     [/^The sample could not be loaded/, 'errorSample'],
+    [/^Cannot unzip \.(?:xmind|mmap|itmz|smmx) file: (?:inflated data|the archive is larger|a member claims)/, 'errorArchiveSize'],
+    [/^Cannot unzip \.(?:xmind|mmap|itmz|smmx) file: (?:it has more than|a member name)/, 'errorArchiveMembers'],
+    [/^Cannot unzip \.(?:xmind|mmap|itmz|smmx) file: decompression took/, 'errorArchiveTime'],
+    [/^Cannot unzip \.(?:xmind|mmap|itmz|smmx) file: (?!it may be corrupt)/, 'errorArchiveUnsupported'],
     [/^Cannot unzip \.xmind/, 'errorZip'],
     [/^\.xmind file has neither content.json nor content.xml/, 'errorOld'],
     [/^Failed to parse content.json/, 'errorXmindJson'],

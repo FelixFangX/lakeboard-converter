@@ -32,7 +32,7 @@ npm install -g lakeboard-converter
 | SimpleMind `.smmx` | Yes | — |
 | CSV outline `.csv` | Yes. One topic per row; the column is the depth | — |
 
-Not kept: styles, layout, icons, relationships, and encrypted nodes. MindManager notes are plain text. A CSV row with several topics is rejected. The native MindNode package is not read; export OPML.
+Floating topics are kept. Relationships, summary topics, encrypted topic bodies, links that are not `http`/`https`/`mailto`, and notes with no plain text are reported in `losses` and on a `> Note:` line (see [docs/conversion.md](./docs/conversion.md)). Zip inputs are refused above 32 MiB compressed, 32 MiB inflated, or 1024 members. XMind Zen links are kept as stored. Styles, layout, and icons are omitted without a warning. MindManager notes are plain text. A CSV row with several topics is rejected. The native MindNode package is not read; export OPML.
 
 English | [简体中文](./README.zh-CN.md)
 
@@ -47,7 +47,7 @@ lakeboard-converter build plan.md -o plan.xmind
 
 `lakeboard-converter` with no subcommand opens the guided prompts.
 
-`read` prints `md` (default), `json`, or `outline`. The default node cap is 2000 (`--max-nodes`, from 1 to 50000). The root is depth 0. Since 0.4.0, JSON for more than one sheet is `{ sheets: [{ index, title, root }] }`. `--sheet` is a 1-based index or a sheet title.
+`read` prints `md` (default), `json`, or `outline`. The default node cap is 2000 (`--max-nodes`, from 1 to 50000). The root is depth 0. Since 0.4.0, JSON for more than one sheet is `{ sheets: [{ index, title, root }] }`. `--sheet` is a 1-based index or a sheet title. When a file omits structure the parser can see, `read`, `inspect`, and `convert` print `> Note:`. `--json` puts the same counts in `losses`.
 
 The MCP tools are `convert`, `convert_many`, and `inspect` (read-only) and `from_markdown` (writes a `.xmind` only at the path you pass, in a folder that already exists). `inspect` reports the format in `source`. Set `overwrite` to replace a file. With no path, `from_markdown` returns the file as base64. Markdown input is capped at 2 MB. `convert_many` takes 1 to 50 files.
 

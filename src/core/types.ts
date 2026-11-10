@@ -1,3 +1,5 @@
+import type { ConversionLoss } from './losses.js';
+
 export interface TopicNode {
   id: string;
   title: string;
@@ -27,6 +29,8 @@ export interface MindMapDocument {
   root: TopicNode;
   nodeCount: number;
   maxDepth: number;
+  /** Structural omissions for this file. Empty when the parser found nothing it drops. */
+  losses?: ConversionLoss[];
 }
 
 /** @deprecated Use MindMapDocument instead */

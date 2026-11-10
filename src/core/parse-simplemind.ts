@@ -1,5 +1,6 @@
-import JSZip from 'jszip';
+import { openZip } from './bounded-zip.js';
 import { buildSheetDocument } from './document.js';
+import { LossTally } from './losses.js';
 import { elementToPlain } from './rich-text.js';
 import type { MindMapDocument, TopicNode } from './types.js';
 import { attr, childElements, parseXml, type XmlElement } from './xml.js';
@@ -20,15 +21,19 @@ function topicNotes(topic: XmlElement): string {
   return [...own, ...outer.filter(Boolean)].join('\n');
 }
 
-function topicHref(topic: XmlElement): string | undefined {
+function topicHref(topic: XmlElement, tally: LossTally): string | undefined {
   const link = childElements(topic, 'link')[0];
-  return externalHref(link ? attr(link, 'urllink') || attr(link, 'url') || attr(link, 'href') : undefined);
+  if (!link) return undefined;
+  const raw = (attr(link, 'urllink') || attr(link, 'url') || attr(link, 'href') || attr(link, 'diagramref') || '').trim();
+  const href = externalHref(raw);
+  if (raw && !href) tally.add('internal-link');
+  return href;
 }
 
-function toTopic(element: XmlElement, children: TopicNode[]): TopicNode {
+function toTopic(element: XmlElement, children: TopicNode[], tally: LossTally): TopicNode {
   const topic: TopicNode = { id: attr(element, 'id') || attr(element, 'guid') || '', title: topicTitle(element), order: 0, children };
   const notes = topicNotes(element);
-  const href = topicHref(element);
+  const href = topicHref(element, tally);
   if (notes) topic.notes = notes;
   if (href) topic.href = href;
   return topic;
@@ -40,12 +45,12 @@ function nestedTopics(element: XmlElement): XmlElement[] {
   return childElements(element).flatMap(nestedTopics);
 }
 
-function treeFromParents(topics: XmlElement[]): TopicNode[] {
+function treeFromParents(topics: XmlElement[], tally: LossTally): TopicNode[] {
   const nodes = new Map<string, TopicNode>();
   const pending: { parent: string; node: TopicNode }[] = [];
   topics.forEach((topic, index) => {
     const id = attr(topic, 'id') || `simplemind-${index}`;
-    const node = toTopic(topic, []);
+    const node = toTopic(topic, [], tally);
     node.id = id;
     nodes.set(id, node);
     pending.push({ parent: attr(topic, 'parent') ?? '-1', node });
@@ -81,14 +86,14 @@ function mindmaps(root: XmlElement): XmlElement[] {
   return maps.length ? maps : [root];
 }
 
-function fromNested(topic: XmlElement): TopicNode {
-  return toTopic(topic, childElements(topic, 'topic').map(fromNested));
+function fromNested(topic: XmlElement, tally: LossTally): TopicNode {
+  return toTopic(topic, childElements(topic, 'topic').map(child => fromNested(child, tally)), tally);
 }
 
-function rootsOf(map: XmlElement): TopicNode[] {
+function rootsOf(map: XmlElement, tally: LossTally): TopicNode[] {
   const topics = allTopics(map);
-  if (topics.some(topic => attr(topic, 'parent') !== undefined)) return treeFromParents(topics);
-  return nestedTopics(map).map(fromNested);
+  if (topics.some(topic => attr(topic, 'parent') !== undefined)) return treeFromParents(topics, tally);
+  return nestedTopics(map).map(topic => fromNested(topic, tally));
 }
 
 /** Read SimpleMind `document/mindmap.xml`. Topics are linked by `parent` (`-1` is the central topic) or nested. */
@@ -103,13 +108,21 @@ export function parseSimpleMindXml(content: string, sourcePath?: string): MindMa
   if (name !== 'simplemind-mindmaps' && name !== 'mindmap' && !childElements(xml, 'mindmap').length && !allTopics(xml).length) {
     throw new Error('Input is not a SimpleMind map');
   }
+  const tally = new LossTally();
+  for (const map of mindmaps(xml)) {
+    for (const group of childElements(map, 'relations')) {
+      const relations = childElements(group, 'relation');
+      tally.add('relationship', relations.length || childElements(group).length);
+    }
+  }
   const maps = mindmaps(xml).map(map => {
-    const nodes = rootsOf(map);
+    const nodes = rootsOf(map, tally);
     if (!nodes.length) throw new Error('SimpleMind file has no topics');
     const root = nodes.length === 1 ? nodes[0] : { id: '', title: mapTitle(map, 'Mind map'), order: 0, children: nodes };
     return buildSheetDocument('simplemind', mapTitle(map, root.title), root, sourcePath);
   });
-  if (maps.length === 1) return maps[0];
+  const losses = tally.list();
+  if (maps.length === 1) return { ...maps[0], losses };
   const sheets = maps.map((map, index) => ({ ...map.sheets[0], index: index + 1 }));
   return {
     sourcePath,
@@ -118,6 +131,7 @@ export function parseSimpleMindXml(content: string, sourcePath?: string): MindMa
     root: sheets[0].root,
     nodeCount: sheets.reduce((sum, sheet) => sum + sheet.nodeCount, 0),
     maxDepth: Math.max(...sheets.map(sheet => sheet.maxDepth)),
+    losses,
   };
 }
 
@@ -130,15 +144,10 @@ function decodeUtf8(buffer: ArrayBuffer | Uint8Array): string {
 export async function parseSimpleMindBuffer(buffer: ArrayBuffer | Uint8Array, sourcePath?: string): Promise<MindMapDocument> {
   const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
   if (bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
-    let zip: JSZip;
-    try {
-      zip = await JSZip.loadAsync(bytes);
-    } catch {
-      throw new Error('Cannot unzip .smmx file: it may be corrupt or not a valid ZIP archive');
-    }
-    const entry = zip.file('document/mindmap.xml') ?? zip.file(/(?:^|\/)mindmap\.xml$/i)[0];
-    if (!entry) throw new Error('SimpleMind file is missing document/mindmap.xml');
-    return parseSimpleMindXml(await entry.async('string'), sourcePath);
+    const zip = openZip(bytes, '.smmx');
+    const name = zip.names.find(entry => entry === 'document/mindmap.xml') ?? zip.names.find(entry => /(?:^|\/)mindmap\.xml$/i.test(entry));
+    if (!name) throw new Error('SimpleMind file is missing document/mindmap.xml');
+    return parseSimpleMindXml(zip.readText(name), sourcePath);
   }
   return parseSimpleMindXml(decodeUtf8(bytes), sourcePath);
 }

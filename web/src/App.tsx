@@ -1,5 +1,6 @@
 import { initialLanguage, persistLanguage, updateLanguage, t, type TranslationKey } from './i18n.js';
 import { webErrorKey } from './converter.js';
+import { lossLine } from './losses.js';
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { convertFile, type MindMapDocument, type MarkdownStyle, type TopicNode } from './converter.js';
 import { updateTabLED, type InstrumentState } from './tab-led.js';
@@ -29,10 +30,12 @@ export function App() {
   const [view, setView] = useState<'markdown' | 'tree'>('markdown');
   const [copied, setCopied] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const errorBox = useRef<HTMLDivElement>(null);
   const operation = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useLayoutEffect(() => { updateLanguage(language); updateTabLED(state, language); }, [state, language]);
+  useLayoutEffect(() => { if (error) errorBox.current?.scrollIntoView({ block: 'center' }); }, [error]);
   useEffect(() => () => { ++operation.current; clearTimeout(timer.current); clearTimeout(copyTimer.current); }, []);
 
   const run = useCallback(async (source: File | 'lakeboard' | 'xmind', nextStyle: MarkdownStyle) => {
@@ -97,7 +100,7 @@ export function App() {
     <header className="header"><div className="header-inner"><a className="brand" href="https://ledring.dev" aria-label={text('home')}>Convert</a><nav className="family-nav" aria-label="LEDRING family"><a href="https://ledring.dev/tools/">Tools</a><a href="https://ledring.dev/projects/">Projects</a><a href="https://ledring.dev/notes/">Notes</a><a href="https://ledring.dev/">Home ↗</a></nav><a className="github" href="https://github.com/FelixFangX/lakeboard-converter" aria-label={text('github')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" /></svg></a><button className="language-toggle label" onClick={() => { const next = language === 'en' ? 'zh' : 'en'; persistLanguage(next); setLanguage(next); }}><span lang={language === 'en' ? 'zh-CN' : 'en'}>{language === 'en' ? '中文' : 'EN'}</span><span className="sr-only">{text('switchLanguage')}</span></button></div></header>
     <main id="main" className={map ? 'main has-output' : 'main'}>
       <input ref={input} hidden type="file" accept=".opml,.mm,.md,.markdown,.lakeboard,.xmind,.mmap,.itmz,.smmx,.csv" onChange={e => { const selected = e.target.files?.[0]; if (selected) void run(selected, style); e.target.value = ''; }} />
-      {map ? <div className="output-heading"><span className="chip format-badge" data-testid="format-badge">{FORMAT_BADGE[map.format]}</span><span className="chip file-chip" data-user-content>{file?.name} → {file?.name.replace(/\.[^.]+$/, '')}.md</span></div> : <section className="blend-hero" aria-labelledby="hero-title"><div className="hero-copy"><p className="eyebrow">{language === 'en' ? 'Convert' : text('tool')}</p><h1 id="hero-title">{text('hero')}<br />{text('heroEnd')}</h1><p className="lead">{text('lead')}</p><button className="convert-cta" onClick={() => input.current?.click()}><span className="led" aria-hidden="true" />{text('convertMap')}<span aria-hidden="true">↗</span></button></div><div className="example-flow"><div className="example-panel"><div className="example-meta"><span>{text('exampleKind')}</span><span>{text('source')}</span></div><h2>{text('research')}</h2><p>{text('evidence')} &nbsp; / &nbsp; {text('questions')}</p></div><div className="example-panel"><div className="example-meta"><span>Markdown</span><span>.md</span></div><pre>{`# ${text('research')}\n\n## ${text('evidence')}\n\n## ${text('questions')}`}</pre></div></div></section>}
+      {map ? <><div className="output-heading"><span className="chip format-badge" data-testid="format-badge">{FORMAT_BADGE[map.format]}</span><span className="chip file-chip" data-user-content>{file?.name} → {file?.name.replace(/\.[^.]+$/, '')}.md</span></div>{map.losses?.length ? <p className="losses" data-testid="losses" role="status">{lossLine(map.losses, language)}</p> : null}</> : <section className="blend-hero" aria-labelledby="hero-title"><div className="hero-copy"><p className="eyebrow">{language === 'en' ? 'Convert' : text('tool')}</p><h1 id="hero-title">{text('hero')}<br />{text('heroEnd')}</h1><p className="lead">{text('lead')}</p><button className="convert-cta" onClick={() => input.current?.click()}><span className="led" aria-hidden="true" />{text('convertMap')}<span aria-hidden="true">↗</span></button></div><div className="example-flow"><div className="example-panel"><div className="example-meta"><span>{text('exampleKind')}</span><span>{text('source')}</span></div><h2>{text('research')}</h2><p>{text('evidence')} &nbsp; / &nbsp; {text('questions')}</p></div><div className="example-panel"><div className="example-meta"><span>Markdown</span><span>.md</span></div><pre>{`# ${text('research')}\n\n## ${text('evidence')}\n\n## ${text('questions')}`}</pre></div></div></section>}
       {!map && <h2 className="converter-title">{text('converterTitle')}</h2>}
       {!map && <section className="input-panel"><div className="well dropzone" data-testid="dropzone" role="button" tabIndex={0} aria-label={text('chooseAria')} aria-busy={busy}
         onClick={() => input.current?.click()} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); input.current?.click(); } }}
@@ -107,7 +110,7 @@ export function App() {
       </div></section>}
       <div className={map ? undefined : 'feedback'}>
         <div className="status label" data-testid="status-line" role="status" aria-live="polite">{showStatus ? status : ''}</div>
-        {error && <div className="error-callout"><p>{errorSentence}</p><button data-testid="reset" onClick={reset}>{text('retry')}</button></div>}
+        {error && <div className="error-callout" ref={errorBox}><p>{errorSentence}</p><button data-testid="reset" onClick={reset}>{text('retry')}</button></div>}
       </div>
       {map && <section className="results" data-view={view}>
         <div className="output-controls"><div className="segments" aria-label={text('view')}><button aria-pressed={view === 'markdown'} onClick={() => setView('markdown')}>Markdown</button><button aria-pressed={view === 'tree'} onClick={() => setView('tree')}>{text('tree')}</button></div><label className="style-control">{text('style')} <select value={style} onChange={e => { const next = e.target.value as MarkdownStyle; setStyle(next); if (file) void run(file, next); }}><option value="generic">{text('generic')}</option><option value="xmind">XMind</option></select></label><button className="reset" data-testid="reset" onClick={reset}>{text('another')}</button></div>
