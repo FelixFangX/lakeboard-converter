@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { openZip } from './bounded-zip.js';
 import { buildSheetDocument } from './document.js';
 import { LossTally } from './losses.js';
 import { elementToPlain } from './rich-text.js';
@@ -144,15 +144,10 @@ function decodeUtf8(buffer: ArrayBuffer | Uint8Array): string {
 export async function parseSimpleMindBuffer(buffer: ArrayBuffer | Uint8Array, sourcePath?: string): Promise<MindMapDocument> {
   const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
   if (bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
-    let zip: JSZip;
-    try {
-      zip = await JSZip.loadAsync(bytes);
-    } catch {
-      throw new Error('Cannot unzip .smmx file: it may be corrupt or not a valid ZIP archive');
-    }
-    const entry = zip.file('document/mindmap.xml') ?? zip.file(/(?:^|\/)mindmap\.xml$/i)[0];
-    if (!entry) throw new Error('SimpleMind file is missing document/mindmap.xml');
-    return parseSimpleMindXml(await entry.async('string'), sourcePath);
+    const zip = openZip(bytes, '.smmx');
+    const name = zip.names.find(entry => entry === 'document/mindmap.xml') ?? zip.names.find(entry => /(?:^|\/)mindmap\.xml$/i.test(entry));
+    if (!name) throw new Error('SimpleMind file is missing document/mindmap.xml');
+    return parseSimpleMindXml(zip.readText(name), sourcePath);
   }
   return parseSimpleMindXml(decodeUtf8(bytes), sourcePath);
 }

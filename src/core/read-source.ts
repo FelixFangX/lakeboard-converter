@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { ARCHIVE_LIMITS, ZipLimitError } from './bounded-zip.js';
 import type { MindMapDocument, SourceFormat } from './types.js';
 import { parseCsvContent } from './parse-csv.js';
 import { parseFreeMindContent } from './parse-freemind.js';
@@ -62,14 +63,35 @@ export async function parseSourceBuffer(buffer: ArrayBuffer | Uint8Array, source
   return parseTextDocument(sourceFormat, decodeUtf8(buffer), sourcePath);
 }
 
+const ZIP_KIND: Partial<Record<SourceFormat, string>> = {
+  xmind: '.xmind',
+  mindmanager: '.mmap',
+  ithoughts: '.itmz',
+  simplemind: '.smmx',
+};
+
+async function readZipFile(filePath: string, kind: string): Promise<Buffer> {
+  try {
+    const info = await stat(filePath);
+    if (info.size > ARCHIVE_LIMITS.maxArchiveBytes) {
+      throw new ZipLimitError(`Cannot unzip ${kind} file: the archive is larger than ${ARCHIVE_LIMITS.maxArchiveBytes / 1024 / 1024} MiB.`, 0);
+    }
+  } catch (error) {
+    if (error instanceof ZipLimitError) throw error;
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+  return readFile(filePath);
+}
+
 export async function parseXmindFile(filePath: string): Promise<MindMapDocument> {
-  return parseXmindBuffer(await readFile(filePath), filePath);
+  return parseXmindBuffer(await readZipFile(filePath, '.xmind'), filePath);
 }
 
 export async function readMindMapFile(filePath: string): Promise<MindMapDocument & { warnings?: string[] }> {
   const format = formatForExtension(path.extname(filePath));
   if (!format) throw new Error(unsupportedInputMessage(path.extname(filePath).toLowerCase()));
-  if (format === 'xmind') return parseXmindFile(filePath);
-  const buffer = await readFile(filePath);
+  const kind = ZIP_KIND[format];
+  const buffer = await (kind ? readZipFile(filePath, kind) : readFile(filePath));
+  if (format === 'xmind') return parseXmindBuffer(buffer, filePath);
   return parseSourceBuffer(buffer, format, filePath);
 }

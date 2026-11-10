@@ -1,5 +1,5 @@
+import { ZipLimitError, openZip } from './bounded-zip.js';
 import { createFallbackIds } from './fallback-ids.js';
-import JSZip from 'jszip';
 import { LossTally } from './losses.js';
 import { elementToPlain, htmlToPlain } from './rich-text.js';
 import { normalizeTree } from './normalize.js';
@@ -189,25 +189,20 @@ export async function parseXmindBuffer(
   buffer: ArrayBuffer | Uint8Array,
   sourcePath?: string,
 ): Promise<MindMapDocument> {
-  let zip: JSZip;
-  try {
-    zip = await JSZip.loadAsync(buffer);
-  } catch {
-    throw new Error('Cannot unzip .xmind file: it may be corrupt or not a valid ZIP archive');
-  }
-
-  const contentFile = zip.file('content.json');
-  if (!contentFile) {
-    const legacy = zip.file('content.xml') ?? zip.file(/(?:^|\/)content\.xml$/i)[0];
-    if (!legacy) throw new Error('.xmind file has neither content.json nor content.xml');
-    return parseXMind8(await legacy.async('string'), sourcePath);
+  const zip = openZip(buffer, '.xmind');
+  const jsonName = zip.names.find(name => name === 'content.json');
+  const xmlName = zip.names.find(name => name === 'content.xml') ?? zip.names.find(name => /(?:^|\/)content\.xml$/i.test(name));
+  if (!jsonName) {
+    if (!xmlName) throw new Error('.xmind file has neither content.json nor content.xml');
+    return parseXMind8(zip.readText(xmlName), sourcePath);
   }
 
   let sheets: XMindSheet[];
   try {
-    const contentStr = await contentFile.async('string');
+    const contentStr = zip.readText(jsonName);
     sheets = JSON.parse(contentStr) as XMindSheet[];
-  } catch {
+  } catch (error) {
+    if (error instanceof ZipLimitError) throw error;
     throw new Error('Failed to parse content.json in the .xmind file');
   }
 

@@ -16,6 +16,7 @@ function renderNodes(nodes: XmlNode[]): string {
   for (const node of nodes) {
     if (typeof node === 'string') { text += node; continue; }
     const name = node.name.toLowerCase();
+    if (name === 'script' || name === 'style') continue;
     if (name === 'br') { text += '\n'; continue; }
     text += renderNodes(node.children);
     if (BLOCKS.has(name)) text += '\n';
@@ -26,6 +27,8 @@ function renderNodes(nodes: XmlNode[]): string {
 /** Plain text of an HTML string. Tags are removed before entity decoding so `&lt;` stays visible. */
 export function htmlToPlain(html: string): string {
   const stripped = html
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(script|style)\b[^>]*>[\s\S]*$/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|li|tr|blockquote|pre|h[1-6])>/gi, '\n')
     .replace(/<[^>]+>/g, '');

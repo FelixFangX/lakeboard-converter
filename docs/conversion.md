@@ -30,9 +30,29 @@ Omissions the parser can see are `losses`: `{ code, count }` in this order. Zero
 
 Styles, icons, and layout are omitted on every file. A warning for them would fire on ordinary maps and hide the omissions above. Summary topics are counted and are not inserted as children. Encrypted bodies are not decrypted.
 
-## Left for later
+## Archive limits
 
-Zip readers call `JSZip.loadAsync` with no cap on uncompressed size (`.xmind`, `.mmap`, `.itmz`, `.smmx`). A size cap is a real gap and was not part of this change. Per-sheet loss counts, style preservation, and decrypting nodes were also left out. No dependency was added.
+`.xmind`, `.mmap`, `.itmz`, and `.smmx` are ZIP files. The reader does not ask JSZip to inflate them. It reads the central directory, then inflates only the content member (content.json, content.xml, Document.xml, mapdata.xml, or mindmap.xml) with a raw deflate stream that throws from the output callback. The overflowing chunk is not kept. Header sizes are not the limit: a header that claims 16 uncompressed bytes still stops if the stream produces more than the cap, and a header that claims more than the cap is refused before inflate.
+
+| Limit | Value |
+| --- | --- |
+| Compressed container, checked before `readFile` when the path is on disk | 32 MiB |
+| Members in the central directory, including directories | 1024 |
+| Inflated bytes retained for the content member | 32 MiB |
+| Wall clock for that inflate | 10 seconds |
+| Member name | 512 bytes |
+| Compression on the content member | store or deflate |
+| Rejected outright | encryption, multi-disk, `..` in a member name |
+
+Other members are counted and are not inflated. Nested zips inside a member are not opened. CRC32 is not checked. A file under these caps can still be hostile in other ways. Per-sheet loss counts, styles, and encrypted node bodies remain out of scope.
+
+Measured on Node v22.23.4, Linux 6.12, 4 vCPU: a synthetic raw-deflate member of 96 MiB of zeros (97,846 compressed bytes, central-directory uncompressed size 16) stops after 33,554,432 bytes. `VmHWM` for that process rose by 37,056,512 bytes, not by the 96 MiB the stream would have produced. The fixture is built in the test and is not a user file. Windows CI runs the same stop count and the rejection itself; `/proc` high-water data is Linux-only.
+
+A rejected file leaves the page on the idle converter. The error callout is scrolled into view. The sample cards on that page are the built-in example, not output from the rejected file. CLI and MCP print the specific limit on stderr or `isError` and do not write a Markdown file.
+
+## Links and HTML notes
+
+XMind Zen `href` values are copied into the Markdown as stored, including `xmind:` and `javascript:` links. The page renders titles, notes, and those hrefs as text. It does not turn a topic href into an `<a>` and it does not use `dangerouslySetInnerHTML`. A later Markdown viewer can still activate a `javascript:` link. HTML notes drop `script` and `style` elements, including their text, before the remaining markup becomes a plain note.
 
 ## Fixtures
 

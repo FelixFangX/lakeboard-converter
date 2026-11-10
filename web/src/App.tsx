@@ -30,10 +30,12 @@ export function App() {
   const [view, setView] = useState<'markdown' | 'tree'>('markdown');
   const [copied, setCopied] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const errorBox = useRef<HTMLDivElement>(null);
   const operation = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useLayoutEffect(() => { updateLanguage(language); updateTabLED(state, language); }, [state, language]);
+  useLayoutEffect(() => { if (error) errorBox.current?.scrollIntoView({ block: 'center' }); }, [error]);
   useEffect(() => () => { ++operation.current; clearTimeout(timer.current); clearTimeout(copyTimer.current); }, []);
 
   const run = useCallback(async (source: File | 'lakeboard' | 'xmind', nextStyle: MarkdownStyle) => {
@@ -108,7 +110,7 @@ export function App() {
       </div></section>}
       <div className={map ? undefined : 'feedback'}>
         <div className="status label" data-testid="status-line" role="status" aria-live="polite">{showStatus ? status : ''}</div>
-        {error && <div className="error-callout"><p>{errorSentence}</p><button data-testid="reset" onClick={reset}>{text('retry')}</button></div>}
+        {error && <div className="error-callout" ref={errorBox}><p>{errorSentence}</p><button data-testid="reset" onClick={reset}>{text('retry')}</button></div>}
       </div>
       {map && <section className="results" data-view={view}>
         <div className="output-controls"><div className="segments" aria-label={text('view')}><button aria-pressed={view === 'markdown'} onClick={() => setView('markdown')}>Markdown</button><button aria-pressed={view === 'tree'} onClick={() => setView('tree')}>{text('tree')}</button></div><label className="style-control">{text('style')} <select value={style} onChange={e => { const next = e.target.value as MarkdownStyle; setStyle(next); if (file) void run(file, next); }}><option value="generic">{text('generic')}</option><option value="xmind">XMind</option></select></label><button className="reset" data-testid="reset" onClick={reset}>{text('another')}</button></div>

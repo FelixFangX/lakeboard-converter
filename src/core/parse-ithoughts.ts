@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { openZip } from './bounded-zip.js';
 import { buildSheetDocument } from './document.js';
 import { LossTally } from './losses.js';
 import type { MindMapDocument, TopicNode } from './types.js';
@@ -54,15 +54,10 @@ function decodeUtf8(buffer: ArrayBuffer | Uint8Array): string {
 export async function parseIThoughtsBuffer(buffer: ArrayBuffer | Uint8Array, sourcePath?: string): Promise<MindMapDocument> {
   const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
   if (bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
-    let zip: JSZip;
-    try {
-      zip = await JSZip.loadAsync(bytes);
-    } catch {
-      throw new Error('Cannot unzip .itmz file: it may be corrupt or not a valid ZIP archive');
-    }
-    const entry = zip.file('mapdata.xml') ?? zip.file(/(?:^|\/)mapdata\.xml$/i)[0];
-    if (!entry) throw new Error('iThoughts file is missing mapdata.xml');
-    return parseIThoughtsXml(await entry.async('string'), sourcePath);
+    const zip = openZip(bytes, '.itmz');
+    const name = zip.names.find(entry => entry === 'mapdata.xml') ?? zip.names.find(entry => /(?:^|\/)mapdata\.xml$/i.test(entry));
+    if (!name) throw new Error('iThoughts file is missing mapdata.xml');
+    return parseIThoughtsXml(zip.readText(name), sourcePath);
   }
   return parseIThoughtsXml(decodeUtf8(bytes), sourcePath);
 }

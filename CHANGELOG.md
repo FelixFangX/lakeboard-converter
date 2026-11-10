@@ -7,6 +7,7 @@ All notable changes to this project are documented here, following Keep a Change
 ### Fixed
 
 - XMind Zen floating topics are kept after attached topics. An HTML note is used when plain text is missing. Both used to disappear with a successful exit.
+- Zip reads (`.xmind`, `.mmap`, `.itmz`, `.smmx`) stop during inflate at 32 MiB of output. A member that only claims a small size in its header is still counted by the bytes actually produced. Encrypted members, multi-disk zips, and compression other than store or deflate on the content file are rejected. The convert does not write a partial file.
 
 ### Added
 

@@ -13,5 +13,5 @@
     "types": ["vite/client"],
     "noEmit": true
   },
-  "include": ["web/src/**/*.ts", "web/src/**/*.tsx"]
+  "include": ["web/src/**/*.ts", "web/src/**/*.tsx", "src/pako.d.ts"]
 }

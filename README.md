@@ -32,7 +32,7 @@ npm install -g lakeboard-converter
 | SimpleMind `.smmx` | Yes | — |
 | CSV outline `.csv` | Yes. One topic per row; the column is the depth | — |
 
-Floating topics are kept. Relationships, summary topics, encrypted topic bodies, links that are not `http`/`https`/`mailto`, and notes with no plain text are reported in `losses` and on a `> Note:` line (see [docs/conversion.md](./docs/conversion.md)). XMind Zen links are kept as stored. Styles, layout, and icons are omitted without a warning. MindManager notes are plain text. A CSV row with several topics is rejected. The native MindNode package is not read; export OPML.
+Floating topics are kept. Relationships, summary topics, encrypted topic bodies, links that are not `http`/`https`/`mailto`, and notes with no plain text are reported in `losses` and on a `> Note:` line (see [docs/conversion.md](./docs/conversion.md)). Zip inputs are refused above 32 MiB compressed, 32 MiB inflated, or 1024 members. XMind Zen links are kept as stored. Styles, layout, and icons are omitted without a warning. MindManager notes are plain text. A CSV row with several topics is rejected. The native MindNode package is not read; export OPML.
 
 English | [简体中文](./README.zh-CN.md)
 
