@@ -11,6 +11,7 @@ import { buildMindMap, convertBuffer, convertFile, inspectMindMap, readMindMap }
 import { lossSentence } from '../src/core/losses.js';
 import { createServer } from '../src/mcp.js';
 import { convertFile as webConvert } from '../web/src/converter.js';
+import { lossLine } from '../web/src/losses.js';
 
 const run = promisify(execFile);
 const fixture = (name: string) => path.join(__dirname, '..', 'test-fixtures', name);
@@ -213,4 +214,7 @@ it('surfaces the same losses on read, inspect, convert, MCP and the web converte
 
   const written = await convertFile({ input: file, format: 'md', markdownStyle: 'generic', outDir: dir, overwrite: true });
   expect(written.losses).toEqual(zenLosses);
+  expect(lossLine(zenLosses, 'en')).toBe('Dropped 2 relationships. Dropped 1 summary topic. Dropped 2 notes with no plain text.');
+  expect(lossLine([{ code: 'encrypted', count: 1 }], 'zh')).toBe('已保留 1 个加密主题的标题。');
+  expect(lossLine([], 'en')).toBe('');
 });
