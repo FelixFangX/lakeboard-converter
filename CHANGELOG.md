@@ -4,6 +4,8 @@ All notable changes to this project are documented here, following Keep a Change
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-10
+
 ### Fixed
 
 - XMind Zen floating topics are kept after attached topics. An HTML note is used when plain text is missing. Both used to disappear with a successful exit.
