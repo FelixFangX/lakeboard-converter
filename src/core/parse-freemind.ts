@@ -1,4 +1,5 @@
 import { buildSheetDocument } from './document.js';
+import { LossTally } from './losses.js';
 import { elementToPlain } from './rich-text.js';
 import type { MindMapDocument, SourceFormat, TopicNode } from './types.js';
 import { attr, childElements, parseXml, type XmlElement } from './xml.js';
@@ -21,7 +22,9 @@ function isFreeplane(map: XmlElement): boolean {
   return false;
 }
 
-function toTopic(element: XmlElement): TopicNode {
+function toTopic(element: XmlElement, tally: LossTally): TopicNode {
+  if ((attr(element, 'ENCRYPTED') ?? '').toLowerCase() === 'true') tally.add('encrypted');
+  tally.add('relationship', childElements(element, 'arrowlink').length);
   const richTitle = rich(element, 'NODE');
   const plain = attr(element, 'TEXT') ?? attr(element, 'LOCALIZED_TEXT')?.replace(/_/g, ' ') ?? '';
   const notes = rich(element, 'NOTE');
@@ -35,7 +38,7 @@ function toTopic(element: XmlElement): TopicNode {
     id: attr(element, 'ID') ?? '',
     title: richTitle || plain,
     order: 0,
-    children: childElements(element, 'node').map(toTopic),
+    children: childElements(element, 'node').map(child => toTopic(child, tally)),
   };
   if (notes) topic.notes = notes;
   if (href) topic.href = href;
@@ -52,9 +55,10 @@ export function parseFreeMindContent(content: string, sourcePath?: string): Mind
     throw new Error(`Failed to parse FreeMind file: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (xml.name.toLowerCase() !== 'map') throw new Error('Input is not a FreeMind or Freeplane map');
-  const nodes = childElements(xml, 'node').map(toTopic);
+  const tally = new LossTally();
+  const nodes = childElements(xml, 'node').map(node => toTopic(node, tally));
   if (!nodes.length) throw new Error('FreeMind file has no root node');
   const format: SourceFormat = isFreeplane(xml) ? 'freeplane' : 'freemind';
   const root = nodes.length === 1 ? nodes[0] : { id: '', title: 'Mind map', order: 0, children: nodes };
-  return buildSheetDocument(format, root.title, root, sourcePath);
+  return buildSheetDocument(format, root.title, root, sourcePath, format, tally.list());
 }

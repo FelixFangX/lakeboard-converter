@@ -4,8 +4,13 @@ All notable changes to this project are documented here, following Keep a Change
 
 ## [Unreleased]
 
+### Fixed
+
+- XMind Zen floating topics are kept after attached topics. An HTML note is used when plain text is missing. Both used to disappear with a successful exit.
+
 ### Added
 
+- `losses` on `convert`, `read`, and `inspect` (CLI, library, and MCP), plus the same sentence in the web result. Codes: `relationship`, `summary`, `encrypted`, `internal-link`, `rich-note`. See `docs/conversion.md`.
 - Read OPML (`.opml`), FreeMind and Freeplane (`.mm`), Markdown outlines (`.md`, `.markdown`, including markmap front matter and indented outlines), MindManager (`.mmap`), XMind 8 (`content.xml` in `.xmind`), iThoughts (`.itmz`), SimpleMind (`.smmx`), and one-topic-per-row CSV (`.csv`) to Markdown. `inspect` reports the format in `source`.
 - The browser converter accepts the same inputs and shows a format badge with the Markdown preview.
 

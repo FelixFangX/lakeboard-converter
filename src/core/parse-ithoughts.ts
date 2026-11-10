@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { buildSheetDocument } from './document.js';
+import { LossTally } from './losses.js';
 import type { MindMapDocument, TopicNode } from './types.js';
 import { attr, childElements, parseXml, type XmlElement } from './xml.js';
 
@@ -8,23 +9,25 @@ function externalHref(value: string | undefined): string | undefined {
   return /^(https?:|mailto:)/i.test(href) ? href : undefined;
 }
 
-function toTopic(element: XmlElement): TopicNode {
-  const href = externalHref(attr(element, 'link') || attr(element, 'url'));
+function toTopic(element: XmlElement, tally: LossTally): TopicNode {
+  const rawLink = (attr(element, 'link') || attr(element, 'url') || '').trim();
+  const href = externalHref(rawLink);
+  if (rawLink && !href) tally.add('internal-link');
   const notes = (attr(element, 'note') ?? '').trim();
   const topic: TopicNode = {
     id: attr(element, 'uuid') || attr(element, 'id') || '',
     title: attr(element, 'text') ?? '',
     order: 0,
-    children: childElements(element, 'topic').map(toTopic),
+    children: childElements(element, 'topic').map(child => toTopic(child, tally)),
   };
   if (notes) topic.notes = notes;
   if (href) topic.href = href;
   return topic;
 }
 
-function topicsOf(root: XmlElement): TopicNode[] {
-  if (root.name.toLowerCase() === 'topic') return [toTopic(root)];
-  return childElements(root, 'topic').map(toTopic);
+function topicsOf(root: XmlElement, tally: LossTally): TopicNode[] {
+  if (root.name.toLowerCase() === 'topic') return [toTopic(root, tally)];
+  return childElements(root, 'topic').map(topic => toTopic(topic, tally));
 }
 
 /** Read iThoughts `mapdata.xml`. Hierarchy is nested `topic` elements; text, note, and link are attributes. */
@@ -35,10 +38,11 @@ export function parseIThoughtsXml(content: string, sourcePath?: string): MindMap
   } catch (error) {
     throw new Error(`Failed to parse iThoughts file: ${error instanceof Error ? error.message : String(error)}`);
   }
-  const nodes = topicsOf(xml);
+  const tally = new LossTally();
+  const nodes = topicsOf(xml, tally);
   if (!nodes.length) throw new Error('iThoughts file has no topic');
   const root = nodes.length === 1 ? nodes[0] : { id: '', title: 'Mind map', order: 0, children: nodes };
-  return buildSheetDocument('ithoughts', root.title, root, sourcePath);
+  return buildSheetDocument('ithoughts', root.title, root, sourcePath, 'ithoughts', tally.list());
 }
 
 function decodeUtf8(buffer: ArrayBuffer | Uint8Array): string {

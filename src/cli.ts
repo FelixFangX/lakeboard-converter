@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { convertFile } from './index.js';
 import { batchText, inspectSummary, inspectMindMap, readMindMaps, buildMindMap, readMindMap, type AgentFormat } from './agent.js';
+import { lossSentences } from './core/losses.js';
 import { supportedInputList } from './core/read-source.js';
 
 const { version } = createRequire(import.meta.url)('../package.json');
@@ -56,6 +57,8 @@ program
       for (const output of result.outputs) {
         console.log(`Wrote: ${output}`);
       }
+      const omitted = lossSentences(result.losses);
+      if (omitted.length) console.log(`> Note: ${omitted.join(' ')}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(options.json ? JSON.stringify({ error: message }) : message);
@@ -108,6 +111,8 @@ program
         console.log(inspectSummary(result));
         console.log('Index\tTitle\tNodes\tMax depth');
         for (const sheet of result.sheets) console.log(`${sheet.index}\t${sheet.title}\t${sheet.nodeCount}\t${sheet.maxDepth}`);
+        const omitted = lossSentences(result.losses);
+        if (omitted.length) console.log(`> Note: ${omitted.join(' ')}`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

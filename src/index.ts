@@ -1,12 +1,14 @@
 import { selectSheet } from './core/select-sheet.js';
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { ConversionLoss } from './core/losses.js';
 import type { MarkdownStyle, MindMapDocument, SourceFormat } from './core/types.js';
 import { parseSourceBuffer, readMindMapFile } from './core/read-source.js';
 import { renderGenericMarkdown, renderXmindMarkdown } from './render/markdown.js';
 import { renderXmind } from './render/xmind.js';
 
 export type { MindMapDocument, TopicNode, SourceFormat, MarkdownStyle } from './core/types.js';
+export type { ConversionLoss } from './core/losses.js';
 export { parseLakeboardFile } from './core/parse-lakeboard.js';
 export { parseXmindBuffer } from './core/parse-xmind.js';
 export { parseXmindFile } from './core/read-source.js';
@@ -20,6 +22,8 @@ export interface ConvertResult {
   outputs: string[];
   nodeCount: number;
   maxDepth: number;
+  /** Structural omissions. Empty when the file had none the parser can see. */
+  losses: ConversionLoss[];
 }
 
 export interface ConvertInputOptions {
@@ -93,6 +97,7 @@ export async function convertFile(options: ConvertInputOptions): Promise<Convert
     ...(options.sheet !== undefined ? { selectedSheet: { index: document.sheets[0].index, title: document.sheets[0].title } } : {}),
     nodeCount: document.nodeCount,
     maxDepth: document.maxDepth,
+    losses: document.losses ?? [],
   };
 }
 

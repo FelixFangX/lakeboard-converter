@@ -1,10 +1,11 @@
 import { createFallbackIds } from './fallback-ids.js';
 import { normalizeTree } from './normalize.js';
+import type { ConversionLoss } from './losses.js';
 import type { MindMapDocument, SourceFormat, TopicNode } from './types.js';
 import { validateTree } from './validate.js';
 
 /** Assign stable ids, normalize titles, and wrap one tree as a single-sheet document. */
-export function buildSheetDocument(format: SourceFormat, sheetTitle: string, root: TopicNode, sourcePath?: string, idPrefix = format): MindMapDocument {
+export function buildSheetDocument(format: SourceFormat, sheetTitle: string, root: TopicNode, sourcePath?: string, idPrefix = format, losses: ConversionLoss[] = []): MindMapDocument {
   const nodes: TopicNode[] = [];
   const collect = (node: TopicNode): void => { nodes.push(node); node.children.forEach(collect); };
   collect(root);
@@ -24,5 +25,6 @@ export function buildSheetDocument(format: SourceFormat, sheetTitle: string, roo
     sheets: [{ index: 1, title: sheetTitle.trim() || normalized.title, root: normalized, ...stats }],
     root: normalized,
     ...stats,
+    losses,
   };
 }

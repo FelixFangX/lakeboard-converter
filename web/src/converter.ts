@@ -7,6 +7,7 @@ import { parseMindManagerBuffer } from '../../src/core/parse-mindmanager.js';
 import { parseOpmlContent } from '../../src/core/parse-opml.js';
 import { parseSimpleMindBuffer } from '../../src/core/parse-simplemind.js';
 import { parseXmindBuffer } from '../../src/core/parse-xmind.js';
+import type { ConversionLoss } from '../../src/core/losses.js';
 import type { SourceFormat } from '../../src/core/types.js';
 
 export interface TopicNode {
@@ -25,6 +26,7 @@ export interface MindMapDocument {
   root: TopicNode;
   nodeCount: number;
   maxDepth: number;
+  losses?: ConversionLoss[];
 }
 
 export type MarkdownStyle = 'generic' | 'xmind';

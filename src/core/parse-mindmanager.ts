@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { buildSheetDocument } from './document.js';
+import { LossTally } from './losses.js';
 import type { MindMapDocument, TopicNode } from './types.js';
 import { attr, childElements, childText, parseXml, type XmlElement } from './xml.js';
 
@@ -35,9 +36,11 @@ function subTopics(topic: XmlElement): XmlElement[] {
   return childElements(topic, 'Topic');
 }
 
-function toTopic(topic: XmlElement): TopicNode {
+function toTopic(topic: XmlElement, tally: LossTally): TopicNode {
   const note = descendants(topic, 'NotesData')[0];
-  const notes = (note ? attr(note, 'PlainText') ?? childText(note) : '').trim();
+  const plain = note ? attr(note, 'PlainText') : undefined;
+  const notes = (note ? plain ?? childText(note) : '').trim();
+  if (note && !notes && childElements(note).length > 0 && !plain?.trim()) tally.add('rich-note');
   const link = descendants(topic, 'Hyperlink')[0];
   const href = (link ? attr(link, 'Url') || attr(link, 'Uri') || attr(link, 'Href') || '' : '').trim();
   const labels = descendants(topic, 'Category').map(item => (attr(item, 'Name') ?? childText(item)).trim()).filter(Boolean);
@@ -45,7 +48,7 @@ function toTopic(topic: XmlElement): TopicNode {
     ...subTopics(topic),
     ...topicsIn(topic, 'FloatingTopics'),
     ...topicsIn(topic, 'CalloutTopics'),
-  ].map(toTopic);
+  ].map(child => toTopic(child, tally));
   const node: TopicNode = { id: attr(topic, 'OId') || attr(topic, 'ID') || '', title: topicTitle(topic), order: 0, children };
   if (notes) node.notes = notes;
   if (href) node.href = href;
@@ -73,10 +76,11 @@ export function parseMindManagerXml(content: string, sourcePath?: string): MindM
   }
   const found = findMap(xml);
   if (!found) throw new Error('MindManager file has no central topic');
-  const root = toTopic(found.topic);
-  const extras = ['FloatingTopics', 'DetachedTopics', 'CalloutTopics'].flatMap(name => topicsIn(found.map, name)).map(toTopic);
+  const tally = new LossTally();
+  const root = toTopic(found.topic, tally);
+  const extras = ['FloatingTopics', 'DetachedTopics', 'CalloutTopics'].flatMap(name => topicsIn(found.map, name)).map(topic => toTopic(topic, tally));
   root.children.push(...extras);
-  return buildSheetDocument('mindmanager', root.title, root, sourcePath);
+  return buildSheetDocument('mindmanager', root.title, root, sourcePath, 'mindmanager', tally.list());
 }
 
 function decodeUtf8(buffer: ArrayBuffer | Uint8Array): string {

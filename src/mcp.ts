@@ -8,6 +8,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { batchText, inspectSummary, inspectMindMap, readMindMaps, buildMindMap, readMindMap } from './agent.js';
 import { supportedInputList } from './core/read-source.js';
+import { LOSS_CODES, lossSentences } from './core/losses.js';
 import { SOURCE_FORMATS } from './core/types.js';
 
 const { version } = createRequire(import.meta.url)('../package.json');
@@ -21,7 +22,8 @@ export function createServer(): McpServer {
       description:
         `Pass an absolute path. Read an OPML, FreeMind, Freeplane, Markdown outline, Yuque Lakeboard, XMind (Zen or XMind 8), MindManager, iThoughts, SimpleMind, or CSV outline (${supportedInputList()}) from a local path. ` +
         'All sheets are included (each under its sheet title); pass sheet (1-based index or title) to read one. Large maps are cut at maxNodes (default 2000) and flagged as truncated. ' +
-        'format "md" = nested Markdown list, "json" = topic tree, "outline" = compact indented text. Read-only.',
+        'format "md" = nested Markdown list, "json" = topic tree, "outline" = compact indented text. ' +
+        'losses lists structural omissions; the same sentences are appended to warnings. Read-only.',
       inputSchema: {
         path: z.string().describe(`Absolute path to a mind map (${supportedInputList()})`),
         sheet: z.union([z.string(), z.number().int().min(1)]).optional(),
@@ -35,6 +37,7 @@ export function createServer(): McpServer {
         sheets: z.array(z.object({ index: z.number().int(), title: z.string(), nodeCount: z.number().int(), maxDepth: z.number().int() })),
         selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
         truncated: z.boolean(), warnings: z.array(z.string()),
+        losses: z.array(z.object({ code: z.enum(LOSS_CODES), count: z.number().int().positive() })),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -56,6 +59,7 @@ export function createServer(): McpServer {
     format: z.enum(['md', 'json', 'outline']), nodeCount: z.number().int(), maxDepth: z.number().int(),
     sheets: z.array(sheetMetadata), selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
     truncated: z.boolean(), warnings: z.array(z.string()),
+    losses: z.array(z.object({ code: z.enum(LOSS_CODES), count: z.number().int().positive() })),
   });
   server.registerTool('convert_many', {
     title: 'Read several mind maps',
@@ -87,18 +91,21 @@ export function createServer(): McpServer {
   });
   server.registerTool('inspect', {
     title: "Check a mind map's size",
-    description: `Parse a local mind map (${supportedInputList()}) and count topics without rendering content. Pass an absolute path. source reports the format. Read-only.`,
+    description: `Parse a local mind map (${supportedInputList()}) and count topics without rendering content. Pass an absolute path. source reports the format. losses lists structural omissions for the whole file. Read-only.`,
     inputSchema: { path: z.string().refine(value => path.isAbsolute(value), 'Pass an absolute path'), sheet: sheetSchema },
     outputSchema: {
       schemaVersion: z.literal(1), file: z.string(), source: z.enum(SOURCE_FORMATS), bytes: z.number().int(),
       nodeCount: z.number().int(), maxDepth: z.number().int(), sheets: z.array(sheetMetadata),
       selectedSheet: z.object({ index: z.number().int(), title: z.string() }).optional(),
+      losses: z.array(z.object({ code: z.enum(LOSS_CODES), count: z.number().int().positive() })),
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, async ({ path, ...options }) => {
     try {
       const result = await inspectMindMap(path, options);
-      return { content: [{ type: 'text', text: inspectSummary(result) }], structuredContent: { ...result } };
+      const omitted = lossSentences(result.losses);
+      const text = inspectSummary(result) + (omitted.length ? `\n> Note: ${omitted.join(' ')}` : '');
+      return { content: [{ type: 'text', text }], structuredContent: { ...result } };
     } catch (error) {
       return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }] };
     }

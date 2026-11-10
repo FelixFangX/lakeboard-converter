@@ -6,6 +6,7 @@ import os from 'node:os';
 import { stat, writeFile } from 'node:fs/promises';
 import { selectSheet } from './core/select-sheet.js';
 import type { SourceFormat, TopicNode } from './core/types.js';
+import { lossSentences, type ConversionLoss } from './core/losses.js';
 import { readMindMapFile } from './core/read-source.js';
 import { renderGenericMarkdown, renderOutline } from './render/markdown.js';
 
@@ -32,6 +33,8 @@ export interface AgentReadResult {
   selectedSheet?: { index: number; title: string };
   truncated: boolean;
   warnings: string[];
+  /** Omitted structure. Also repeated as sentences in warnings. Empty when nothing was dropped. */
+  losses: ConversionLoss[];
   content: string | AgentTopic | { sheets: { index: number; title: string; root: AgentTopic }[] };
 }
 
@@ -78,7 +81,8 @@ export async function readMindMap(file: string, format: AgentFormat, options: Re
   };
   const sheets = original.sheets.flatMap(sheet => { const root = prune(sheet.root, 0); return root ? [{ ...sheet, root, ...validateTree(root) }] : []; });
   const doc = { ...original, sheets, root: sheets[0].root, nodeCount: count, maxDepth: Math.max(...sheets.map(s => s.maxDepth)) };
-  const warnings: string[] = [...(parsed.warnings ?? [])];
+  const losses = parsed.losses ?? [];
+  const warnings: string[] = [...(parsed.warnings ?? []), ...lossSentences(losses)];
   if (sizeCut) warnings.push(`Output truncated at ${count} of ${original.nodeCount} nodes. Pass a higher maxNodes or pick a sheet.`);
   if (depthCut) warnings.push(`Output truncated at maxDepth ${options.maxDepth}. Pass a higher maxDepth to include deeper topics.`);
   const content =
@@ -90,6 +94,7 @@ export async function readMindMap(file: string, format: AgentFormat, options: Re
     ...(options.sheet !== undefined ? { selectedSheet: { index: original.sheets[0].index, title: original.sheets[0].title } } : {}),
     truncated: sizeCut || depthCut,
     warnings,
+    losses,
     source: doc.format,
     format,
     nodeCount: doc.nodeCount,
@@ -107,6 +112,7 @@ export interface AgentInspectResult {
   maxDepth: number;
   sheets: AgentReadResult['sheets'];
   selectedSheet?: AgentReadResult['selectedSheet'];
+  losses: ConversionLoss[];
 }
 
 /** Parse and count topics without rendering content. */
@@ -119,6 +125,7 @@ export async function inspectMindMap(file: string, options: { sheet?: string | n
     nodeCount: selected.nodeCount, maxDepth: selected.maxDepth,
     sheets: parsed.sheets.map(({ index, title, nodeCount, maxDepth }) => ({ index, title, nodeCount, maxDepth })),
     ...(options.sheet !== undefined ? { selectedSheet: { index: selected.sheets[0].index, title: selected.sheets[0].title } } : {}),
+    losses: parsed.losses ?? [],
   };
 }
 
