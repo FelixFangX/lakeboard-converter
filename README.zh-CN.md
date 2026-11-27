@@ -2,7 +2,9 @@
 
 [English](./README.md) | 简体中文
 
-把思维导图转成人和智能体能读的 Markdown。支持 OPML (`.opml`)、FreeMind / Freeplane (`.mm`)、Markdown 大纲 (`.md`)、语雀画板 (`.lakeboard`)、XMind Zen 与 XMind 8 (`.xmind`)、MindManager (`.mmap`)、iThoughts (`.itmz`)、SimpleMind (`.smmx`) 和 CSV 大纲 (`.csv`)。浏览器工具：[convert.ledring.dev](https://convert.ledring.dev)。包名仍是 `lakeboard-converter`。
+把思维导图转成人和智能体能读的 Markdown。支持 9 种格式：OPML (`.opml`)、FreeMind / Freeplane (`.mm`)、Markdown 大纲 (`.md`)、语雀画板 (`.lakeboard`)、XMind Zen 与 XMind 8 (`.xmind`)、MindManager (`.mmap`)、iThoughts (`.itmz`)、SimpleMind (`.smmx`) 和 CSV 大纲 (`.csv`)。浏览器工具：[convert.ledring.dev](https://convert.ledring.dev)（本地运行，文件不上传）。包名仍是 `lakeboard-converter`。
+
+[![Mind map to Markdown — convert.ledring.dev](./web/public/og.png)](https://convert.ledring.dev/?lang=zh)
 
 ## 功能特性
 
@@ -129,6 +131,12 @@ Web 界面支持中文和英文，以下以英文界面文字为例，提供：
 
 ```bash
 npx -y lakeboard-converter mcp
+```
+
+Claude Code：
+
+```bash
+claude mcp add lakeboard-converter -- npx -y lakeboard-converter mcp
 ```
 
 Claude Desktop (`claude_desktop_config.json`):
